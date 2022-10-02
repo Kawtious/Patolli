@@ -7,6 +7,7 @@ package entities;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.UUID;
+import utilities.Console;
 
 public class Player {
 
@@ -134,12 +135,16 @@ public class Player {
 
         int count = 0;
         for (Token token : tokens) {
-            if (token.getCurrentPos() >= 0) {
+            if (tokenIsInPlay(token)) {
                 count++;
             }
         }
 
         return count;
+    }
+
+    public boolean tokenIsInPlay(final Token token) {
+        return token.getCurrentPos() >= 1;
     }
 
     public boolean hasTokens() {
@@ -175,21 +180,32 @@ public class Player {
             return;
         }
 
-        if (currentToken > 1) {
-            for (int i = currentToken; i <= getTokensCount(); i++) {
-                if (getToken(i).getCurrentPos() >= 0) {
-                    currentToken = i;
-                    break;
+        if (tokensInPlay() > 1) {
+            if (currentToken > 1) {
+                for (int i = currentToken + 1; i <= getTokensCount(); i++) {
+                    if (tokenIsInPlay(getToken(i))) {
+                        currentToken = i;
+                        return;
+                    }
                 }
-            }
-        } else {
-            for (int i = 1; i <= getTokensCount(); i++) {
-                if (getToken(i).getCurrentPos() >= 0) {
-                    currentToken = i;
-                    break;
+
+                for (int j = 1; j < currentToken; j++) {
+                    if (tokenIsInPlay(getToken(j))) {
+                        currentToken = j;
+                        return;
+                    }
+                }
+            } else {
+                for (int i = 2; i <= getTokensCount(); i++) {
+                    if (tokenIsInPlay(getToken(i))) {
+                        currentToken = i;
+                        return;
+                    }
                 }
             }
         }
+
+        Console.WriteLine("Selecting token " + currentToken + " of player " + getName());
     }
 
 }
