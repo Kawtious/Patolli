@@ -15,12 +15,15 @@ public class Console {
 
     public static void WriteLine(final String string) {
         LocalDateTime now = LocalDateTime.now();
+        int year = now.getYear();
+        int month = now.getMonthValue();
+        int day = now.getDayOfMonth();
         int hour = now.getHour();
         int minute = now.getMinute();
         int second = now.getSecond();
         int millis = now.get(ChronoField.MILLI_OF_SECOND); // Note: no direct getter available.
 
-        System.out.printf("[%02d:%02d:%02d.%03d] [Console] %s\n", hour, minute, second, millis, string);
+        System.out.printf("[%d-%02d-%02d %02d:%02d:%02d.%03d] [Console] %s\n", year, month, day, hour, minute, second, millis, string);
     }
 
 }

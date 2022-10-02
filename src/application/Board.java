@@ -48,7 +48,7 @@ public class Board {
 
             addCenterSpace();
         }
-        
+
         Console.WriteLine("Created board of size " + getBoardSize());
     }
 
@@ -130,7 +130,9 @@ public class Board {
 
     public void removeTokensFromPlayer(final Player player) {
         for (Token token : player.getTokens()) {
-            removeTokensAtPos(token.getCurrentPos());
+            if (token.getCurrentPos() >= 0) {
+                removeTokensAtPos(token.getCurrentPos());
+            }
         }
     }
 

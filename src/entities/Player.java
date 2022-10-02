@@ -18,7 +18,7 @@ public class Player {
 
     private final ArrayList<Token> tokens = new ArrayList<>();
 
-    private int currentToken = 0;
+    private int currentToken = 1;
 
     private int balance;
 
@@ -124,7 +124,26 @@ public class Player {
         return tokens.size();
     }
 
-    public boolean hasTokensInPlay() {
+    public int tokensInPlay() {
+        if (tokens.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (Token token : tokens) {
+            if (token.getCurrentPos() >= 0) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    public boolean hasTokens() {
+        if (tokens.isEmpty()) {
+            return false;
+        }
+
         return getTokensCount() > 0;
     }
 
@@ -137,12 +156,24 @@ public class Player {
     }
 
     public void selectNextToken() {
-        if (hasTokensInPlay()) {
-            currentToken++;
+        if (tokens.isEmpty()) {
+            return;
         }
 
-        if (currentToken > getTokensCount()) {
-            currentToken = 1;
+        if (currentToken > 1) {
+            for (int i = currentToken; i <= getTokensCount(); i++) {
+                if (getToken(i).getCurrentPos() >= 0) {
+                    currentToken = i;
+                    break;
+                }
+            }
+        } else {
+            for (int i = 1; i <= getTokensCount(); i++) {
+                if (getToken(i).getCurrentPos() >= 0) {
+                    currentToken = i;
+                    break;
+                }
+            }
         }
     }
 
