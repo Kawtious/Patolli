@@ -6,4 +6,9 @@ package entities.spaces;
 
 public class ExteriorSpace extends Space {
 
+    @Override
+    public String toString() {
+        return "ExteriorSpace";
+    }
+
 }

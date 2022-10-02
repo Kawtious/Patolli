@@ -17,13 +17,15 @@ public class Main {
      */
     public static void main(String[] args) {
         //game();
+        game.setSquares(2);
         game.setBet(5);
+        game.setMaxTokens(2);
 
         final ArrayList<Player> players = new ArrayList<>();
-        players.add(new Player("001", Color.yellow, 100));
-        players.add(new Player("002", Color.red, 100));
-        players.add(new Player("003", Color.green, 100));
-        players.add(new Player("004", Color.blue, 100));
+        players.add(new Player("Al", Color.yellow, 100, game.getMaxTokens()));
+        players.add(new Player("Brad", Color.red, 100, game.getMaxTokens()));
+        players.add(new Player("Caleb", Color.green, 100, game.getMaxTokens()));
+//        players.add(new Player("Dingus", Color.blue, 100, game.getMaxTokens()));
 
         game.addPlayers(players);
         //game.shufflePlayers();

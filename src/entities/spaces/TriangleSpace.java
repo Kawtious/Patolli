@@ -5,4 +5,10 @@
 package entities.spaces;
 
 public class TriangleSpace extends Space {
+
+    @Override
+    public String toString() {
+        return "TriangleSpace";
+    }
+
 }

@@ -6,4 +6,9 @@ package entities.spaces;
 
 public class SquareSpace extends Space {
 
+    @Override
+    public String toString() {
+        return "SquareSpace";
+    }
+
 }

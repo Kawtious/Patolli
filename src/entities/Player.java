@@ -18,15 +18,18 @@ public class Player {
 
     private final ArrayList<Token> tokens = new ArrayList<>();
 
+    private final int maxTokens;
+
     private int currentToken = 1;
 
     private int balance;
 
-    public Player(String name, Color color, int balance) {
+    public Player(final String name, final Color color, final int balance, final int maxTokens) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.color = color;
         this.balance = balance;
+        this.maxTokens = maxTokens;
     }
 
     public UUID getId() {
@@ -77,7 +80,7 @@ public class Player {
     }
 
     public Token createAndAssignToken(final int initialPos) {
-        if (getTokensCount() < 6) {
+        if (getTokensCount() < maxTokens) {
             final Token token = new Token(this, initialPos);
 
             tokens.add(token);
@@ -148,7 +151,19 @@ public class Player {
     }
 
     public boolean hasInsertedAllTokens() {
-        return getTokensCount() >= 6;
+        return getTokensCount() >= maxTokens;
+    }
+
+    public int countFinishedTokens() {
+        int count = 0;
+
+        for (Token token : tokens) {
+            if (token.getCurrentPos() == -2) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     public void clearTokens() {

@@ -6,4 +6,9 @@ package entities.spaces;
 
 public class CentralSpace extends Space {
 
+    @Override
+    public String toString() {
+        return "CentralSpace";
+    }
+
 }

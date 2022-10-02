@@ -50,19 +50,22 @@ public class Board {
         }
 
         Console.WriteLine("Created board of size " + getBoardSize());
+
+        for (Space space : spaces) {
+            Console.WriteLine(space.toString());
+        }
     }
 
     private void addBlade(final int squares, final int triangles) {
-        final int RIGHT = 0, LEFT = 1;
-        for (int side = RIGHT; side < 2; side++) {
-            addSquareSpaces(squares);
-
-            if (side == RIGHT) {
+        for (int side = 0; side < 2; side++) {
+            if (side == 0) {
+                addSquareSpaces(squares);
                 addTriangleSpaces(triangles);
                 addExteriorSpace();
-            } else if (side == LEFT) {
+            } else {
                 addExteriorSpace();
                 addTriangleSpaces(triangles);
+                addSquareSpaces(squares);
             }
         }
     }
