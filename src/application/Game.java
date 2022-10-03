@@ -358,8 +358,6 @@ public class Game {
         for (int i = 0; i < 2; i++) {
             payEveryone();
         }
-
-        removePlayerIfBroke(getCurrentPlayer());
     }
 
     private void payEveryonePays() {

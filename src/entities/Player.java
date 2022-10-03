@@ -66,6 +66,10 @@ public class Player {
     }
 
     public int getCurrentToken() {
+        if (!tokenIsInPlay(getToken(currentToken))) {
+            selectNextToken();
+        }
+
         return currentToken;
     }
 
@@ -189,7 +193,7 @@ public class Player {
                     }
                 }
 
-                for (int j = 1; j < currentToken; j++) {
+                for (int j = 1; j <= currentToken; j++) {
                     if (tokenIsInPlay(getToken(j))) {
                         currentToken = j;
                         return;
@@ -201,6 +205,13 @@ public class Player {
                         currentToken = i;
                         return;
                     }
+                }
+            }
+        } else {
+            for (int i = 1; i <= getTokensCount(); i++) {
+                if (tokenIsInPlay(getToken(i))) {
+                    currentToken = i;
+                    return;
                 }
             }
         }
