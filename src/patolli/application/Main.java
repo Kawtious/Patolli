@@ -2,42 +2,44 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package application;
+package patolli.application;
 
-import entities.Player;
-import entities.Token;
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
-import utilities.Console;
+import patolli.game.Balance;
+import patolli.game.Game;
+import patolli.game.Player;
+import patolli.game.Pregame;
+import patolli.game.Settings;
+import patolli.game.tokens.Token;
+import utilities.console.Console;
 
 public class Main {
 
-    private static final Game game = Game.getInstance();
-
-    private static Player player;
+    private static Player player = new Player("Kaw", Color.BLACK, new Balance());
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
 
-        game.setSquares(2);
-        game.setBet(5);
-        game.setMaxTokens(3);
-
-        player = new Player("Kaw", Color.BLACK, 100, game.getMaxTokens());
+        final Settings settings = new Settings(4, 2, 2, 5, 3);
+        final Pregame pregame = new Pregame(settings);
 
         final ArrayList<Player> players = new ArrayList<>();
         players.add(player);
-        players.add(new Player("Brad", Color.red, 100, game.getMaxTokens()));
-        players.add(new Player("Caleb", Color.green, 100, game.getMaxTokens()));
-        players.add(new Player("Dingus", Color.blue, 100, game.getMaxTokens()));
+        players.add(new Player("Brad", Color.red, new Balance()));
+        players.add(new Player("Caleb", Color.green, new Balance()));
+        players.add(new Player("Dingus", Color.blue, new Balance()));
+        pregame.add(players);
 
-        game.addPlayers(players);
+        pregame.shuffle();
 
-        //game.shufflePlayers();
-        if (!game.run()) {
+        final Game game = new Game(pregame);
+
+        if (!game.init()) {
             System.exit(1);
         }
 
@@ -58,14 +60,20 @@ public class Main {
         }
     }
 
+    public void shufflePlayers(final ArrayList<Player> players) {
+        Console.WriteLine("Game", "Shuffling order of players");
+
+        Collections.shuffle(players);
+    }
+
     private static void printTokens() {
-        for (int i = 1; i <= player.getTokensCount(); i++) {
-            Console.WriteLine("Token " + (i) + " at position " + player.getToken(i).getCurrentPos());
+        for (int i = 0; i < player.countTokens(); i++) {
+            Console.WriteLine("Main", "Token " + i + " at position " + player.getToken(i).getCurrentPos());
         }
     }
 
     private static Token selectToken(final Scanner scanner) {
-        Console.WriteLine("It's your turn! Press enter to move next token, or type the index of the token you wish to move");
+        Console.WriteLine("Main", "It's your turn! Press enter to move token " + player.getCurrentToken().getIndex() + ", or type the index of the token you wish to move");
         printTokens();
 
         String readString = scanner.nextLine();
@@ -99,7 +107,7 @@ public class Main {
         if (Character.isDigit(ch)) {
             final int charValue = ch - '0';
 
-            if (charValue > 0 && charValue < player.getTokensCount()) {
+            if (charValue >= 0 && charValue < player.countTokens()) {
                 if (player.getToken(charValue).getCurrentPos() > 0) {
                     return true;
                 }

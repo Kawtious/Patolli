@@ -2,13 +2,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package entities.spaces;
+package patolli.game.board.spaces;
 
-public class SquareSpace extends Space {
+public class ExteriorSpace extends Space {
 
     @Override
     public String toString() {
-        return "SquareSpace";
+        return "ExteriorSpace";
     }
 
 }
