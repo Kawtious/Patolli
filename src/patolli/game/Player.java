@@ -7,7 +7,6 @@ package patolli.game;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.UUID;
-import patolli.game.configuration.Balance;
 import patolli.game.tokens.Token;
 import patolli.game.utils.Console;
 
@@ -169,6 +168,51 @@ public class Player {
     @Override
     public String toString() {
         return name;
+    }
+
+    public static class Balance {
+
+        private final int DEFAULT_BALANCE = 100;
+
+        private int balance;
+
+        public Balance() {
+            this.balance = DEFAULT_BALANCE;
+        }
+
+        public Balance(final int balance) {
+            this.balance = balance;
+        }
+
+        public int get() {
+            return balance;
+        }
+
+        public void set(final int balance) {
+            this.balance = balance;
+        }
+
+        public boolean isBroke() {
+            return balance <= 0;
+        }
+
+        public int compare(final Player player) {
+            return balance - player.getBalance().get();
+        }
+
+        public void take(final int balance) {
+            this.balance += balance;
+        }
+
+        public void give(final int balance) {
+            this.balance -= balance;
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(balance);
+        }
+
     }
 
 }
