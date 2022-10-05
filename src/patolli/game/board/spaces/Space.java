@@ -2,50 +2,50 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package entities.spaces;
-
+package patolli.game.board.spaces;
 
 import java.util.ArrayList;
+import patolli.game.Player;
+import patolli.game.tokens.Token;
 
 public abstract class Space {
 
     private final ArrayList<Token> tokens = new ArrayList<>();
 
-    public ArrayList<Token> getTokens() {
+    public ArrayList<Token> list() {
         return tokens;
     }
 
-    public Token getToken(final int index) {
+    public Token get(final int index) {
         return tokens.get(index);
     }
 
-    public void setToken(final int index, final Token token) {
+    public void set(final int index, final Token token) {
         tokens.set(index, token);
     }
-    
-    public void insertToken(final Token token) {
+
+    public void insert(final Token token) {
         tokens.add(token);
     }
 
-    public void removeToken(final Token token) {
+    public void remove(final Token token) {
         tokens.remove(token);
     }
 
-    public void clearTokens() {
+    public void clear() {
         tokens.clear();
     }
 
-    public boolean hasTokens() {
+    public boolean isEmpty() {
         return !tokens.isEmpty();
     }
 
-    //Método para saber si la casilla tiene dueño
     public Player getOwner() {
-        //Si tiene dueño dime quien es
-        if (!tokens.isEmpty()) {
+        if (isEmpty()) {
             return tokens.get(0).getOwner();
         }
-        //Sino envia un null
+
         return null;
     }
+
 }
