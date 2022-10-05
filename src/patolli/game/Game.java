@@ -5,10 +5,10 @@
 package patolli.game;
 
 import java.util.ArrayList;
-import patolli.game.board.spaces.CentralSpace;
-import patolli.game.board.spaces.ExteriorSpace;
-import patolli.game.board.spaces.Space;
-import patolli.game.board.spaces.TriangleSpace;
+import patolli.game.spaces.CentralSpace;
+import patolli.game.spaces.ExteriorSpace;
+import patolli.game.spaces.Space;
+import patolli.game.spaces.TriangleSpace;
 import patolli.game.configuration.Pregame;
 import patolli.game.tokens.Token;
 import patolli.game.utils.Console;

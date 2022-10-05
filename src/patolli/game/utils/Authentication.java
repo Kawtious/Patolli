@@ -23,7 +23,7 @@ import javax.crypto.spec.PBEKeySpec;
  * @author erickson
  * @see <a href="http://stackoverflow.com/a/2861125/3474">StackOverflow</a>
  */
-public final class PasswordAuthentication {
+public final class Authentication {
 
     /**
      * Each token produced by this class uses this identifier as a prefix.
@@ -45,7 +45,7 @@ public final class PasswordAuthentication {
 
     private final int cost;
 
-    public PasswordAuthentication() {
+    public Authentication() {
         this(DEFAULT_COST);
     }
 
@@ -54,7 +54,7 @@ public final class PasswordAuthentication {
      *
      * @param cost the exponential computational cost of hashing a password, 0 to 30
      */
-    public PasswordAuthentication(int cost) {
+    public Authentication(int cost) {
         iterations(cost);
         /* Validate cost */
         this.cost = cost;

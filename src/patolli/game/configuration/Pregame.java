@@ -4,7 +4,6 @@
  */
 package patolli.game.configuration;
 
-import patolli.game.configuration.Settings;
 import java.util.ArrayList;
 import java.util.Collections;
 import patolli.game.Player;
