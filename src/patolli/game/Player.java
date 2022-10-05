@@ -7,8 +7,9 @@ package patolli.game;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.UUID;
+import patolli.game.configuration.Balance;
 import patolli.game.tokens.Token;
-import utilities.console.Console;
+import patolli.game.utils.Console;
 
 public class Player {
 

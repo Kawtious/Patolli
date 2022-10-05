@@ -2,17 +2,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game.board;
+package patolli.game;
 
 import java.util.ArrayList;
-import patolli.game.Player;
 import patolli.game.board.spaces.CentralSpace;
 import patolli.game.board.spaces.ExteriorSpace;
 import patolli.game.board.spaces.Space;
 import patolli.game.board.spaces.SquareSpace;
 import patolli.game.board.spaces.TriangleSpace;
 import patolli.game.tokens.Token;
-import utilities.console.Console;
+import patolli.game.utils.Console;
 
 public class Board {
 

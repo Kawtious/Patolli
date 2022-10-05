@@ -5,7 +5,7 @@
 package patolli.game;
 
 import java.util.ArrayList;
-import utilities.console.Console;
+import patolli.game.utils.Console;
 
 public class Playerlist {
 

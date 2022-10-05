@@ -2,9 +2,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game;
+package patolli.game.configuration;
 
-import utilities.console.Console;
+import patolli.game.utils.Console;
 
 public class Settings {
 

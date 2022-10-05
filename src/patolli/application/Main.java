@@ -8,13 +8,13 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
-import patolli.game.Balance;
 import patolli.game.Game;
 import patolli.game.Player;
-import patolli.game.Pregame;
-import patolli.game.Settings;
+import patolli.game.configuration.Balance;
+import patolli.game.configuration.Pregame;
+import patolli.game.configuration.Settings;
 import patolli.game.tokens.Token;
-import utilities.console.Console;
+import patolli.game.utils.Console;
 
 public class Main {
 
