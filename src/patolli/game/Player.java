@@ -27,11 +27,20 @@ public class Player {
 
     private int currentToken = 0;
 
+    public Player() {
+        this.id = UUID.randomUUID();
+        this.name = "DEFAULT";
+        this.color = Color.GRAY;
+        this.balance = new Balance();
+        this.dice = new Dice();
+    }
+
     public Player(final String name, final Color color) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.color = color;
         this.balance = new Balance();
+        this.dice = new Dice();
     }
 
     public Player(final String name, final Color color, final Balance balance) {
@@ -39,6 +48,7 @@ public class Player {
         this.name = name;
         this.color = color;
         this.balance = balance;
+        this.dice = new Dice();
     }
 
     public Player(final String name, final Color color, final Balance balance, final Dice dice) {
