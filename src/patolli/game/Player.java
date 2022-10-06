@@ -7,12 +7,17 @@ package patolli.game;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import patolli.game.tokens.Token;
 import patolli.game.utils.Console;
 
 public class Player {
 
     private final UUID id;
+
+    private Balance balance;
+
+    private Dice dice;
 
     private String name;
 
@@ -22,13 +27,26 @@ public class Player {
 
     private int currentToken = 0;
 
-    private Balance balance;
+    public Player(final String name, final Color color) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.color = color;
+        this.balance = new Balance();
+    }
 
     public Player(final String name, final Color color, final Balance balance) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.color = color;
         this.balance = balance;
+    }
+
+    public Player(final String name, final Color color, final Balance balance, final Dice dice) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.color = color;
+        this.balance = balance;
+        this.dice = dice;
     }
 
     public Token getCurrentToken() {
@@ -165,6 +183,14 @@ public class Player {
         this.balance = balance;
     }
 
+    public Dice getDice() {
+        return dice;
+    }
+
+    public void setDice(final Dice dice) {
+        this.dice = dice;
+    }
+
     @Override
     public String toString() {
         return name;
@@ -211,6 +237,56 @@ public class Player {
         @Override
         public String toString() {
             return String.valueOf(balance);
+        }
+
+    }
+
+    public static class Dice {
+
+        private int result;
+        private int outcome;
+
+        public Dice() {
+            throwDice();
+        }
+
+        public int nextResult() {
+            throwDice();
+            return result;
+        }
+
+        public int nextOutcome() {
+            throwDice();
+            return outcome;
+        }
+
+        private void throwDice() {
+            // nextInt is normally exclusive of the top value,
+            // so add 1 to make it inclusive
+            result = ThreadLocalRandom.current().nextInt(0, 5 + 1);
+            determineOutcome();
+        }
+
+        private void determineOutcome() {
+            outcome = result == 5 ? 10 : result;
+        }
+
+        public int getResult() {
+            return result;
+        }
+
+        public void setResult(final int result) {
+            this.result = result;
+            determineOutcome();
+        }
+
+        public int getOutcome() {
+            return outcome;
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(result);
         }
 
     }

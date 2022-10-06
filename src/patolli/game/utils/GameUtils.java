@@ -5,53 +5,9 @@
 package patolli.game.utils;
 
 import java.util.ArrayList;
-import java.util.Random;
 import patolli.game.Player;
 
 public class GameUtils {
-
-    public static int countCoins(final int amount) {
-        Random random = new Random();
-        int successes = 0;
-
-        Console.WriteLine("GameUtils", "Throwing " + amount + " coin" + (amount == 1 ? "" : "s") + " for player");
-
-        for (int i = 0; i < amount; i++) {
-            if (random.nextBoolean()) {
-                successes++;
-            }
-        }
-
-        Console.WriteLine("GameUtils", successes + " coin" + (successes == 1 ? "" : "s") + " landed on true");
-
-        return successes;
-    }
-
-    public static int calculateMovement(final int successes) {
-        int result = 0;
-
-        switch (successes) {
-            case 1 -> {
-                result = 1;
-            }
-            case 2 -> {
-                result = 2;
-            }
-            case 3 -> {
-                result = 3;
-            }
-            case 4 -> {
-                result = 4;
-            }
-            case 5 -> {
-                result = 10;
-            }
-        }
-
-        Console.WriteLine("GameUtils", "Player will move " + result + " space" + (result == 1 ? "" : "s"));
-
-        return result;
-    }
 
     public static void pay(final int amount, final Player from, final Player to) {
         Console.WriteLine("GameUtils", "Player " + from + " pays " + amount + " to player " + to.getName());

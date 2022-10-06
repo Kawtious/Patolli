@@ -4,17 +4,18 @@
  */
 package patolli.game;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import patolli.game.configuration.Pregame;
 import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
 import patolli.game.spaces.TriangleSpace;
-import patolli.game.configuration.Pregame;
 import patolli.game.tokens.Token;
 import patolli.game.utils.Console;
 import patolli.game.utils.GameUtils;
 
-public class Game {
+public class Game implements Serializable {
 
     private Pregame pregame;
 
@@ -52,10 +53,10 @@ public class Game {
     }
 
     public void play(final Token token) {
-        final int successes = GameUtils.countCoins(5);
+        getCurrentPlayer().getDice().nextOutcome();
 
-        if (canPlay(token, successes)) {
-            playToken(token, successes);
+        if (canPlay(token)) {
+            playToken(token);
         }
 
         leaderboard.updateWinner();
@@ -69,14 +70,16 @@ public class Game {
         playerlist.next();
     }
 
-    private boolean canPlay(final Token token, final int successes) {
+    private boolean canPlay(final Token token) {
+        final int outcome = getCurrentPlayer().getDice().getOutcome();
+
         if (getCurrentPlayer().getBalance().isBroke()) {
             Console.WriteLine("Game", "Player " + getCurrentPlayer() + " is unable to pay any more bets and cannot continue playing");
             playerlist.remove(getCurrentPlayer());
             return false;
         }
 
-        if (successes == 0) {
+        if (outcome == 0) {
             // p a y
             if (getCurrentPlayer().tokensInPlay() != 0) {
                 Console.WriteLine("Game", "Player " + getCurrentPlayerName() + " is unable to move any tokens");
@@ -96,7 +99,7 @@ public class Game {
                 return false;
             }
 
-            if (successes == 1) {
+            if (outcome == 1) {
                 if (token == null) {
                     insertToken();
                     return false;
@@ -113,7 +116,7 @@ public class Game {
         return true;
     }
 
-    private void playToken(final Token token, final int successes) {
+    private void playToken(final Token token) {
         Token selectedToken = token;
 
         if (selectedToken == null) {
@@ -125,7 +128,7 @@ public class Game {
             }
         }
 
-        final int nextPos = selectedToken.getCurrentPos() + GameUtils.calculateMovement(successes);
+        final int nextPos = selectedToken.getCurrentPos() + getCurrentPlayer().getDice().getOutcome();
 
         Console.WriteLine("Game", "Token " + selectedToken.getIndex() + " of player " + getCurrentPlayerName() + " moves to space at position " + nextPos);
 
