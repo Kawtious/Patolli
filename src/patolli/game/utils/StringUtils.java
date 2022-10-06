@@ -14,4 +14,15 @@ public final class StringUtils {
     public static boolean isNumeric(String str) {
         return str.matches("-?\\d+(\\.\\d+)?");  //match a number with optional '-' and decimal.
     }
+
+    /**
+     * Function to validate hexadecimal color code
+     *
+     * @param str
+     * @return
+     */
+    public static boolean isValidHexaCode(String str) {
+        // Regex to check valid hexadecimal color code.
+        return str.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
+    }
 }
