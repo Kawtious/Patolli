@@ -26,4 +26,21 @@ public class Console {
         System.out.printf("[%d-%02d-%02d %02d:%02d:%02d.%03d] [%s] %s\n", year, month, day, hour, minute, second, millis, context, string);
     }
 
+    public static class Error {
+
+        public static void WriteLine(final String context, final String string) {
+            LocalDateTime now = LocalDateTime.now();
+            int year = now.getYear();
+            int month = now.getMonthValue();
+            int day = now.getDayOfMonth();
+            int hour = now.getHour();
+            int minute = now.getMinute();
+            int second = now.getSecond();
+            int millis = now.get(ChronoField.MILLI_OF_SECOND); // Note: no direct getter available.
+
+            System.err.printf("[%d-%02d-%02d %02d:%02d:%02d.%03d] [%s] %s\n", year, month, day, hour, minute, second, millis, context, string);
+        }
+
+    }
+
 }
