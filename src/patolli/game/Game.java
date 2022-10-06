@@ -25,10 +25,11 @@ public class Game implements Serializable {
 
     private Playerlist playerlist;
 
-    private volatile boolean finished = false;
+    private GameState state;
 
     public Game(final Pregame pregame) {
         this.pregame = pregame;
+        state = GameState.WAITING;
     }
 
     public boolean init() {
@@ -49,6 +50,8 @@ public class Game implements Serializable {
             return false;
         }
 
+        state = GameState.PLAYING;
+
         return true;
     }
 
@@ -63,7 +66,7 @@ public class Game implements Serializable {
 
         if (playerlist.getPlayers().size() < 2) {
             leaderboard.printResults();
-            finished = true;
+            state = GameState.FINISHED;
             return;
         }
 
@@ -205,7 +208,7 @@ public class Game implements Serializable {
     }
 
     public boolean hasFinished() {
-        return finished;
+        return state == GameState.FINISHED;
     }
 
     public Playerlist getPlayerlist() {
