@@ -59,7 +59,18 @@ public class Pregame {
 
         private int maxTokens;
 
+        private final int DEFAULT_MAXPLAYERS = 4,
+                DEFAULT_SQUARES = 3,
+                DEFAULT_TRIANGLES = 2,
+                DEFAULT_BET = 5,
+                DEFAULT_MAXTOKENS = 3;
+
         public Settings() {
+            this.maxPlayers = DEFAULT_MAXPLAYERS;
+            this.squares = DEFAULT_SQUARES;
+            this.triangles = DEFAULT_TRIANGLES;
+            this.bet = DEFAULT_BET;
+            this.maxTokens = DEFAULT_MAXTOKENS;
         }
 
         public Settings(int maxPlayers, int squares, int triangles, int bet, int maxTokens) {
