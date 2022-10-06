@@ -32,27 +32,26 @@ public class Game implements Serializable {
         state = GameState.WAITING;
     }
 
-    public boolean init() {
+    public void init() {
         if (pregame.getPlayers().size() < 2) {
             Console.WriteLine("Game", "Not enough players have joined the game (" + getPlayerCount() + "/4)");
-            return false;
+            return;
         }
 
         if (!pregame.getSettings().validate()) {
-            return false;
+            return;
+        }
+
+        board = new Board();
+
+        if (!board.createBoard(pregame.getSettings().getSquares(), pregame.getSettings().getTriangles())) {
+            return;
         }
 
         playerlist = new Playerlist(this, pregame.getPlayers());
         leaderboard = new Leaderboard(pregame.getPlayers());
-        board = new Board();
-
-        if (!board.createBoard(pregame.getSettings().getSquares(), pregame.getSettings().getTriangles())) {
-            return false;
-        }
 
         state = GameState.PLAYING;
-
-        return true;
     }
 
     public void play(final Token token) {
@@ -205,6 +204,10 @@ public class Game implements Serializable {
 
     private String getCurrentPlayerName() {
         return getCurrentPlayer().getName();
+    }
+
+    public GameState getState() {
+        return state;
     }
 
     public boolean hasFinished() {
