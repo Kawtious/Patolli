@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
+import patolli.game.online.server.Channel;
+import patolli.game.online.server.Group;
+import patolli.game.utils.Console;
 
 public final class SocketStreams {
 
@@ -104,16 +106,66 @@ public final class SocketStreams {
 
     /**
      *
-     * @param bytes
-     * @return
+     * @param client
+     * @param message
      */
-    public static byte[] trim(final byte[] bytes) {
-        int i = bytes.length - 1;
-        while (i >= 0 && bytes[i] == 0) {
-            --i;
+    public static void send(final SocketThread client, final byte[] message) {
+        try {
+            Console.WriteLine("SocketStreams/" + client.getPlayer().getName(), new String(message));
+            sendBytes(client.getOutput(), message);
+        } catch (IOException ex) {
         }
+    }
 
-        return Arrays.copyOf(bytes, i + 1);
+    /**
+     *
+     * @param channel
+     * @param message
+     */
+    public static void sendTo(final Channel channel, final byte[] message) {
+        for (SocketThread client : channel.getClients()) {
+            send(client, message);
+        }
+    }
+
+    /**
+     *
+     * @param group
+     * @param message
+     */
+    public static void sendTo(final Group group, final byte[] message) {
+        for (SocketThread client : group.getClients()) {
+            if (client.getChannel() == null) {
+                send(client, message);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param client
+     * @param message
+     */
+    public static void send(final SocketThread client, final String message) {
+        send(client, message.getBytes());
+    }
+
+    /**
+     *
+     * @param channel
+     * @param message
+     */
+    public static void sendTo(final Channel channel, final String message) {
+        sendTo(channel, message.getBytes());
+    }
+
+    /**
+     *
+     * @param group
+     * @param message
+     */
+    public static void sendTo(final Group group, final String message) {
+        sendTo(group, message.getBytes());
     }
 
 }

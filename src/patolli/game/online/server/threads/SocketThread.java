@@ -64,7 +64,7 @@ public abstract class SocketThread extends Thread {
                     listen();
                 }
 
-                Console.WriteLine("SocketThread", "[" + player.getName() + "] disconnected from server");
+                Console.WriteLine("SocketThread", player.getName() + " disconnected from server");
 
                 close();
             }
@@ -83,7 +83,7 @@ public abstract class SocketThread extends Thread {
      *
      */
     private void validate() throws IOException {
-        send(SECRET_KEY);
+        SocketStreams.send(this, SECRET_KEY);
 
         if (!Arrays.equals(listen(), SECRET_KEY)) {
             disconnect();
@@ -119,80 +119,6 @@ public abstract class SocketThread extends Thread {
      * @throws IOException
      */
     public abstract void execute(final byte[] msg) throws IOException;
-
-    /**
-     *
-     * @param message
-     */
-    public void send(final byte[] message) {
-        try {
-            SocketStreams.sendBytes(dos, message);
-        } catch (IOException ex) {
-        }
-    }
-
-    /**
-     *
-     * @param message
-     */
-    public void send(final String message) {
-        try {
-            SocketStreams.sendBytes(dos, message.getBytes());
-        } catch (IOException ex) {
-        }
-    }
-
-    /**
-     *
-     * @param group
-     * @param message
-     * @throws IOException
-     */
-    public void sendTo(final Group group, final byte[] message) throws IOException {
-        for (SocketThread client : group.getClients()) {
-            if (client.getChannel() == null) {
-                client.send(message);
-            }
-        }
-    }
-
-    /**
-     *
-     * @param channel
-     * @param message
-     * @throws IOException
-     */
-    public void sendTo(final Channel channel, final byte[] message) throws IOException {
-        for (SocketThread client : channel.getClients()) {
-            client.send(message);
-        }
-    }
-
-    /**
-     *
-     * @param group
-     * @param message
-     * @throws IOException
-     */
-    public void sendTo(final Group group, final String message) throws IOException {
-        for (SocketThread client : group.getClients()) {
-            if (client.getChannel() == null) {
-                client.send(message);
-            }
-        }
-    }
-
-    /**
-     *
-     * @param channel
-     * @param message
-     * @throws IOException
-     */
-    public void sendTo(final Channel channel, final String message) throws IOException {
-        for (SocketThread client : channel.getClients()) {
-            client.send(message);
-        }
-    }
 
     /**
      *
@@ -265,6 +191,10 @@ public abstract class SocketThread extends Thread {
 
     public void setPlayer(Player player) {
         this.player = player;
+    }
+
+    public DataOutputStream getOutput() {
+        return dos;
     }
 
 }

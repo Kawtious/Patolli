@@ -99,11 +99,11 @@ public class Channel extends Connection {
             game = null;
         }
 
-        for (SocketThread client : clients) {
-            pregame.add(client.getPlayer());
-        }
+        System.out.println(pregame.getSettings().toString());
 
-        game = new Game(pregame);
+        pregame.getClients().addAll(clients);
+
+        game = new Game(this);
         game.init();
     }
 

@@ -6,12 +6,14 @@ package patolli.game.configuration;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import patolli.game.Player;
+import patolli.game.online.server.threads.SocketThread;
 import patolli.game.utils.Console;
 
 public class Pregame {
 
-    private final ArrayList<Player> players = new ArrayList<>();
+    private final List<SocketThread> clients = Collections.synchronizedList(new ArrayList<>());
 
     private Settings settings;
 
@@ -19,20 +21,20 @@ public class Pregame {
         this.settings = settings;
     }
 
-    public void add(final Player player) {
-        players.add(player);
+    public void add(final SocketThread client) {
+        clients.add(client);
     }
 
-    public void add(final ArrayList<Player> players) {
-        this.players.addAll(players);
+    public void add(final List<SocketThread> clients) {
+        this.clients.addAll(clients);
     }
 
-    public void remove(final Player player) {
-        players.remove(player);
+    public void remove(final SocketThread client) {
+        clients.remove(client);
     }
 
     public void shuffle() {
-        Collections.shuffle(players);
+        Collections.shuffle(clients);
     }
 
     public Settings getSettings() {
@@ -43,7 +45,16 @@ public class Pregame {
         this.settings = settings;
     }
 
+    public List<SocketThread> getClients() {
+        return clients;
+    }
+
     public ArrayList<Player> getPlayers() {
+        final ArrayList<Player> players = new ArrayList<>();
+        for (SocketThread client : clients) {
+            players.add(client.getPlayer());
+        }
+
         return players;
     }
 
@@ -138,6 +149,19 @@ public class Pregame {
 
         public void setMaxTokens(int maxTokens) {
             this.maxTokens = maxTokens;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Settings{");
+            sb.append("maxPlayers=").append(maxPlayers);
+            sb.append(", squares=").append(squares);
+            sb.append(", triangles=").append(triangles);
+            sb.append(", bet=").append(bet);
+            sb.append(", maxTokens=").append(maxTokens);
+            sb.append('}');
+            return sb.toString();
         }
 
     }
