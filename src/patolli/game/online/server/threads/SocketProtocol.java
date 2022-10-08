@@ -12,7 +12,7 @@ import patolli.game.Player;
 import patolli.game.online.ClientUtils;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.game.tokens.Token;
+import patolli.game.Token;
 import patolli.game.utils.Authentication;
 import patolli.game.utils.Console;
 import patolli.game.utils.StringUtils;

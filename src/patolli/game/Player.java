@@ -8,7 +8,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import patolli.game.tokens.Token;
 
 public class Player {
 

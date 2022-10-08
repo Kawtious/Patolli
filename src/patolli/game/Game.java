@@ -12,7 +12,6 @@ import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
 import patolli.game.spaces.TriangleSpace;
-import patolli.game.tokens.Token;
 import patolli.game.utils.GameUtils;
 
 public class Game implements Serializable {

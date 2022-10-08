@@ -6,7 +6,7 @@ package patolli.game.spaces;
 
 import java.util.ArrayList;
 import patolli.game.Player;
-import patolli.game.tokens.Token;
+import patolli.game.Token;
 
 public abstract class Space {
 
