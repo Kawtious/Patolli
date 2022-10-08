@@ -9,6 +9,7 @@ import java.util.UUID;
 import patolli.game.Game;
 import patolli.game.configuration.Pregame;
 import patolli.game.configuration.Pregame.Settings;
+import patolli.game.online.server.threads.SocketStreams;
 import patolli.game.online.server.threads.SocketThread;
 
 public class Channel extends Connection {
@@ -86,6 +87,11 @@ public class Channel extends Connection {
         client.setGroup(group);
         clients.remove(client);
 
+        if (game != null) {
+            game.getPlayerlist().remove(client);
+            game.getPlayerlist().next();
+        }
+
         if (clients.size() < 1) {
             destroy();
         }
@@ -96,15 +102,28 @@ public class Channel extends Connection {
      */
     public void startGame() {
         if (game != null) {
-            game = null;
+            SocketStreams.sendTo(this, "A game is already running in this channel");
+            return;
         }
-
-        System.out.println(pregame.getSettings().toString());
 
         pregame.getClients().addAll(clients);
 
         game = new Game(this);
-        game.init();
+
+        if (!game.init()) {
+            game = null;
+        }
+    }
+
+    public void stopGame() {
+        if (game == null) {
+            SocketStreams.sendTo(this, "No game is running");
+            return;
+        }
+
+        game = null;
+
+        SocketStreams.sendTo(this, "Game has stopped");
     }
 
     /**

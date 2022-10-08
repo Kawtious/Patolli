@@ -5,50 +5,52 @@
 package patolli.game;
 
 import java.util.ArrayList;
-import patolli.game.utils.Console;
+import java.util.Collections;
+import java.util.List;
+import patolli.game.online.server.threads.SocketThread;
 
 public class Playerlist {
 
     private Game game;
 
-    private final ArrayList<Player> players = new ArrayList<>();
+    private final List<SocketThread> clients = Collections.synchronizedList(new ArrayList<>());
 
     private int turn = 0;
 
-    public Playerlist(final Game game, final ArrayList<Player> players) {
+    public Playerlist(final Game game, final List<SocketThread> clients) {
         this.game = game;
-        this.players.addAll(players);
+        this.clients.addAll(clients);
     }
 
-    public void add(final ArrayList<Player> players) {
-        this.players.addAll(players);
+    public void add(final List<SocketThread> clients) {
+        this.clients.addAll(clients);
     }
 
-    public void remove(final Player player) {
-        Console.WriteLine("Playerlist", "Removing player " + player + " from game");
-        game.getBoard().removeTokensOf(player);
-        players.remove(player);
+    public void remove(final SocketThread client) {
+        game.getBoard().removeTokensOf(client.getPlayer());
+        client.getPlayer().clearTokens();
+        clients.remove(client);
     }
 
     public void update() {
-        for (Player player : players) {
-            if (player.getBalance().isBroke()) {
-                remove(player);
+        for (SocketThread client : clients) {
+            if (client.getPlayer().getBalance().isBroke()) {
+                remove(client);
             }
         }
     }
 
-    public Player getCurrent() {
-        return players.get(turn);
+    public SocketThread getCurrent() {
+        return clients.get(turn);
     }
 
-    public Player get(final int index) {
-        return players.get(index);
+    public SocketThread get(final int index) {
+        return clients.get(index);
     }
 
-    public int getTurnOf(final Player player) {
-        for (int i = 0; i < players.size(); i++) {
-            if (players.get(i).equals(player)) {
+    public int getTurnOf(final SocketThread client) {
+        for (int i = 0; i < clients.size(); i++) {
+            if (clients.get(i).equals(client)) {
                 return i;
             }
         }
@@ -56,21 +58,21 @@ public class Playerlist {
         return -1;
     }
 
-    public Player getNext() {
+    public SocketThread getNext() {
         int index = turn + 1;
 
-        if (index >= players.size()) {
+        if (index >= clients.size()) {
             index = 0;
         }
 
         return get(index);
     }
 
-    public Player getPrev() {
+    public SocketThread getPrev() {
         int index = turn - 1;
 
         if (index < 0) {
-            index = players.size() - 1;
+            index = clients.size() - 1;
         }
 
         return get(index);
@@ -79,18 +81,16 @@ public class Playerlist {
     public void next() {
         turn++;
 
-        if (turn >= players.size()) {
+        if (turn >= clients.size()) {
             turn = 0;
         }
-
-        Console.WriteLine("Playerlist", "It is now player " + getCurrent() + "'s turn");
     }
 
     public void previous() {
         turn--;
 
         if (turn < 0) {
-            turn = players.size() - 1;
+            turn = clients.size() - 1;
         }
     }
 
@@ -102,8 +102,8 @@ public class Playerlist {
         return turn;
     }
 
-    public ArrayList<Player> getPlayers() {
-        return players;
+    public List<SocketThread> getClients() {
+        return clients;
     }
 
 }

@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import patolli.game.tokens.Token;
-import patolli.game.utils.Console;
 
 public class Player {
 
@@ -123,6 +122,7 @@ public class Player {
     }
 
     public void clearTokens() {
+        currentToken = 0;
         tokens.clear();
     }
 
@@ -135,8 +135,6 @@ public class Player {
             for (int i = 1; i < countTokens(); i++) {
                 if (tokenIsInPlay(getToken(i))) {
                     currentToken = i;
-
-                    Console.WriteLine("Player", "Selecting token " + currentToken + " of player " + name);
                     return;
                 }
             }
@@ -144,8 +142,6 @@ public class Player {
             for (int i = currentToken + 1; i < countTokens(); i++) {
                 if (tokenIsInPlay(getToken(i))) {
                     currentToken = i;
-
-                    Console.WriteLine("Player", "Selecting token " + currentToken + " of player " + name);
                     return;
                 }
             }
@@ -153,8 +149,6 @@ public class Player {
             for (int j = 0; j < currentToken; j++) {
                 if (tokenIsInPlay(getToken(j))) {
                     currentToken = j;
-
-                    Console.WriteLine("Player", "Selecting token " + currentToken + " of player " + name);
                     return;
                 }
             }

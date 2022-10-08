@@ -4,43 +4,46 @@
  */
 package patolli.game;
 
-import java.util.ArrayList;
-import patolli.game.utils.Console;
+import java.util.List;
+import patolli.game.online.server.threads.SocketThread;
 
 public class Leaderboard {
 
-    private ArrayList<Player> players;
+    private List<SocketThread> clients;
 
-    private Player winner = null;
+    private SocketThread winner = null;
 
-    public Leaderboard(ArrayList<Player> players) {
-        this.players = players;
+    public Leaderboard(List<SocketThread> players) {
+        this.clients = players;
     }
 
     public void updateWinner() {
-        for (Player player : players) {
-            if (!player.getBalance().isBroke()) {
+        for (SocketThread client : clients) {
+            if (!client.getPlayer().getBalance().isBroke()) {
                 if (winner != null) {
-                    if (winner.finishedTokens() < player.finishedTokens()) {
-                        winner = player;
-                    } else if (winner.finishedTokens() == player.finishedTokens()) {
-                        if (winner.getBalance().compare(player) > 0) {
-                            winner = player;
+                    if (winner.getPlayer().finishedTokens() < client.getPlayer().finishedTokens()) {
+                        winner = client;
+                    } else if (winner.getPlayer().finishedTokens() == client.getPlayer().finishedTokens()) {
+                        if (winner.getPlayer().getBalance().compare(client.getPlayer()) > 0) {
+                            winner = client;
                         }
                     }
                 } else {
-                    winner = player;
+                    winner = client;
                 }
             }
         }
     }
 
-    public void printResults() {
-        Console.WriteLine("Leaderboard", "Player " + winner + " wins the match!");
+    public String printResults() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Player ").append(winner.getPlayer().getName()).append(" wins the match!\n");
 
-        for (Player player : players) {
-            Console.WriteLine("Leaderboard", "Player " + player + "'s tokens that finished: " + player.finishedTokens());
-            Console.WriteLine("Leaderboard", "Player " + player + "'s balance: " + player.getBalance());
+        for (SocketThread client : clients) {
+            sb.append("Player ").append("Player ").append(client.getPlayer().getName()).append("'s tokens that finished: ").append(client.getPlayer().finishedTokens()).append("\n");
+            sb.append("Player ").append(client.getPlayer().getName()).append("'s balance: ").append(client.getPlayer().getBalance()).append("\n");
         }
+
+        return sb.toString();
     }
 }

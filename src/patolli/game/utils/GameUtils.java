@@ -4,36 +4,38 @@
  */
 package patolli.game.utils;
 
-import java.util.ArrayList;
-import patolli.game.Player;
+import java.util.List;
+import patolli.game.Game;
+import patolli.game.online.server.threads.SocketStreams;
+import patolli.game.online.server.threads.SocketThread;
 
 public class GameUtils {
 
-    public static void pay(final int amount, final Player from, final Player to) {
-        Console.WriteLine("GameUtils", "Player " + from + " pays " + amount + " to player " + to.getName());
+    public static void pay(final Game game, final int amount, final SocketThread from, final SocketThread to) {
+        SocketStreams.sendTo(game.getChannel(), "Player " + from.getPlayer().getName() + " pays " + amount + " to player " + to.getPlayer().getName());
 
-        from.getBalance().take(amount);
-        to.getBalance().give(amount);
+        from.getPlayer().getBalance().take(amount);
+        to.getPlayer().getBalance().give(amount);
 
-        Console.WriteLine("GameUtils", "Player " + from + ":  " + from.getBalance() + " | Player " + to.getName() + ": " + to.getBalance());
+        SocketStreams.sendTo(game.getChannel(), "Player " + from.getPlayer().getName() + ":  " + from.getPlayer().getBalance() + " | Player " + to.getPlayer().getName() + ": " + to.getPlayer().getBalance());
     }
 
-    public static void payEveryone(final int amount, final Player from, final ArrayList<Player> to) {
-        Console.WriteLine("GameUtils", "Player " + from + " pays " + amount + " to everyone");
+    public static void payEveryone(final Game game, final int amount, final SocketThread from, final List<SocketThread> to) {
+        SocketStreams.sendTo(game.getChannel(), "Player " + from.getPlayer().getName() + " pays " + amount + " to everyone");
 
-        for (Player player : to) {
+        for (SocketThread player : to) {
             if (!player.equals(from)) {
-                pay(amount, from, player);
+                pay(game, amount, from, player);
             }
         }
     }
 
-    public static void everyonePays(final int amount, final ArrayList<Player> from, final Player to) {
-        Console.WriteLine("GameUtils", "Everyone pays " + amount + " to " + to);
+    public static void everyonePays(final Game game, final int amount, final List<SocketThread> from, final SocketThread to) {
+        SocketStreams.sendTo(game.getChannel(), "Everyone pays " + amount + " to " + to.getPlayer().getName());
 
-        for (Player player : from) {
+        for (SocketThread player : from) {
             if (!player.equals(to)) {
-                pay(amount, player, to);
+                pay(game, amount, player, to);
             }
         }
     }

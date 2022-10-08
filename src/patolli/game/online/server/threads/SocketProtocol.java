@@ -8,7 +8,6 @@ import java.awt.Color;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
-import patolli.game.GameState;
 import patolli.game.Player;
 import patolli.game.online.ClientUtils;
 import patolli.game.online.server.Channel;
@@ -160,6 +159,9 @@ public class SocketProtocol extends SocketThread {
             case "/startgame" -> {
                 pregameCommand.startGame();
             }
+            case "/stopgame" -> {
+                pregameCommand.stopGame();
+            }
             case "/setsquares" -> {
                 pregameCommand.setSquares(getSyntax(syntaxes, 1));
             }
@@ -176,6 +178,11 @@ public class SocketProtocol extends SocketThread {
             // Game
             case "/play" -> {
                 gameCommand.play(getSyntax(syntaxes, 1));
+            }
+
+            // Unknown
+            default -> {
+                command.unknown(getSyntax(syntaxes, 0));
             }
         }
     }
@@ -708,6 +715,10 @@ public class SocketProtocol extends SocketThread {
             SocketStreams.send(getOuter(), sb.toString());
         }
 
+        public void unknown(final String command) {
+            SocketStreams.send(getOuter(), "Unknown command: " + command);
+        }
+
         /**
          *
          * @return
@@ -780,13 +791,29 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (ClientUtils.isOperator(getChannel().getClients(), getOuter())) {
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You need to be an operator in order to start the game");
                 return;
             }
 
-            SocketStreams.send(getOuter(), "Game is starting");
             getChannel().startGame();
+        }
+
+        /**
+         *
+         */
+        public void stopGame() {
+            if (getChannel() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a channel for that");
+                return;
+            }
+
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "Only an operator can stop the game");
+                return;
+            }
+
+            getChannel().stopGame();
         }
 
         /**
@@ -817,7 +844,8 @@ public class SocketProtocol extends SocketThread {
             }
 
             getChannel().getPregame().getSettings().setSquares(squares);
-            SocketStreams.send(getOuter(), "Squares set to " + getChannel().getPregame().getSettings().getSquares());
+
+            SocketStreams.sendTo(getChannel(), "Squares set to " + getChannel().getPregame().getSettings().getSquares());
         }
 
         /**
@@ -848,7 +876,8 @@ public class SocketProtocol extends SocketThread {
             }
 
             getChannel().getPregame().getSettings().setTriangles(triangles);
-            SocketStreams.send(getOuter(), "Triangles set to " + getChannel().getPregame().getSettings().getTriangles());
+
+            SocketStreams.sendTo(getChannel(), "Triangles set to " + getChannel().getPregame().getSettings().getTriangles());
         }
 
         /**
@@ -879,7 +908,8 @@ public class SocketProtocol extends SocketThread {
             }
 
             getChannel().getPregame().getSettings().setBet(bet);
-            SocketStreams.send(getOuter(), "Bet set to " + getChannel().getPregame().getSettings().getBet());
+
+            SocketStreams.sendTo(getChannel(), "Bet set to " + getChannel().getPregame().getSettings().getBet());
         }
 
         /**
@@ -910,7 +940,8 @@ public class SocketProtocol extends SocketThread {
             }
 
             getChannel().getPregame().getSettings().setMaxTokens(maxTokens);
-            SocketStreams.send(getOuter(), "Max tokens set to " + getChannel().getPregame().getSettings().getMaxTokens());
+
+            SocketStreams.sendTo(getChannel(), "Max tokens set to " + getChannel().getPregame().getSettings().getMaxTokens());
         }
 
         /**
@@ -935,8 +966,13 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (getChannel().getGame().getState() != GameState.PLAYING) {
+            if (getChannel().getGame() == null) {
                 SocketStreams.send(getOuter(), "Game hasn't started");
+                return;
+            }
+
+            if (getChannel().getGame().getCurrentClient().getPlayer() != getOuter().getPlayer()) {
+                SocketStreams.send(getOuter(), "It's not your turn");
                 return;
             }
 
