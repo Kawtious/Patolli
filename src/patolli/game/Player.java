@@ -231,11 +231,11 @@ public class Player {
         }
 
         public void take(final int balance) {
-            this.balance += balance;
+            this.balance -= balance;
         }
 
         public void give(final int balance) {
-            this.balance -= balance;
+            this.balance += balance;
         }
 
         @Override

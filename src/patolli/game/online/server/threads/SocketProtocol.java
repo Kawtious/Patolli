@@ -289,7 +289,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            SocketStreams.sendTo(getGroup(), getOuter().getPlayer().getName() + " left the channel");
+            SocketStreams.sendTo(getChannel(), getOuter().getPlayer().getName() + " left the channel");
 
             getChannel().kick(getOuter());
         }
@@ -973,7 +973,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (getChannel().getGame().getCurrentClient().getPlayer() != getOuter().getPlayer()) {
+            if (getChannel().getGame().getPlayerlist().getCurrent().getPlayer() != getOuter().getPlayer()) {
                 SocketStreams.send(getOuter(), "It's not your turn");
                 return;
             }

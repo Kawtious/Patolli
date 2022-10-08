@@ -88,7 +88,7 @@ public class Channel extends Connection {
         clients.remove(client);
 
         if (game != null) {
-            game.getPlayerlist().remove(client);
+            game.getPlayerlist().remove(client, true);
             game.getPlayerlist().next();
         }
 

@@ -26,17 +26,12 @@ public class Playerlist {
         this.clients.addAll(clients);
     }
 
-    public void remove(final SocketThread client) {
+    public void remove(final SocketThread client, final boolean lost) {
         game.getBoard().removeTokensOf(client.getPlayer());
-        client.getPlayer().clearTokens();
         clients.remove(client);
-    }
 
-    public void update() {
-        for (SocketThread client : clients) {
-            if (client.getPlayer().getBalance().isBroke()) {
-                remove(client);
-            }
+        if (lost) {
+            client.getPlayer().clearTokens();
         }
     }
 

@@ -5,6 +5,7 @@
 package patolli.game;
 
 import java.util.ArrayList;
+import patolli.game.online.server.threads.SocketStreams;
 import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
@@ -12,12 +13,16 @@ import patolli.game.spaces.SquareSpace;
 import patolli.game.spaces.TriangleSpace;
 import patolli.game.tokens.Token;
 import patolli.game.utils.Console;
+import patolli.game.utils.GameUtils;
 
 public class Board {
 
+    private Game game;
+
     private final ArrayList<Space> spaces = new ArrayList<>();
 
-    public Board() {
+    public Board(final Game game) {
+        this.game = game;
     }
 
     public boolean createBoard(final int squares, final int triangles) {
@@ -30,7 +35,7 @@ public class Board {
             addCenters();
         }
 
-        Console.WriteLine("Board", "Created board of size " + getSize());
+        SocketStreams.sendTo(game.getChannel(), "Created board of size " + getSize());
 
         for (Space space : spaces) {
             Console.WriteLine("Board", space.toString());
@@ -104,11 +109,18 @@ public class Board {
         remove(token);
 
         if (willTokenFinish(token, nextPos)) {
-            Console.WriteLine("Board", "Token " + token.getIndex() + " of player " + token.getOwner() + " has successfully looped around the board");
+            SocketStreams.sendTo(game.getChannel(), "Token " + token.getIndex() + " of player " + token.getOwner() + " has successfully looped around the board");
+
             token.markAsFinished();
+
+            GameUtils.everyonePays(game, game.getChannel().getPregame().getSettings().getBet(), game.getPlayerlist().getClients(), game.getPlayerlist().getCurrent());
         } else {
             insert(token, newPos);
         }
+    }
+
+    public boolean willCollide(final Player player, final int pos) {
+        return getSpace(pos).getOwner() == null || getSpace(pos).getOwner() == player;
     }
 
     public boolean willTokenFinish(final Token token, final int nextPos) {
