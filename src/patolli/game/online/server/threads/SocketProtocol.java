@@ -243,6 +243,8 @@ public class SocketProtocol extends SocketThread {
             // Pregame
             sb.append("/startgame");
             sb.append(", ");
+            sb.append("/stopgame");
+            sb.append(", ");
             sb.append("/setsquares");
             sb.append(", ");
             sb.append("/settriangles");
