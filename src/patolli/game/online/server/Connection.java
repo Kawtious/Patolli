@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import patolli.game.online.server.threads.SocketThread;
-import patolli.game.utils.Authentication;
+import patolli.utils.Authentication;
 
 public abstract class Connection {
 

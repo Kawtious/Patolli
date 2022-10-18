@@ -11,7 +11,7 @@ import patolli.game.online.server.threads.SocketThread;
 
 public class Playerlist {
 
-    private Game game;
+    private final Game game;
 
     private final List<SocketThread> clients = Collections.synchronizedList(new ArrayList<>());
 
@@ -32,6 +32,10 @@ public class Playerlist {
 
         if (lost) {
             client.getPlayer().clearTokens();
+        }
+
+        if (client.equals(getCurrent())) {
+            next();
         }
     }
 

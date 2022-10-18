@@ -13,32 +13,32 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.Scanner;
 import patolli.game.online.server.threads.SocketStreams;
-import patolli.game.utils.Console;
+import patolli.utils.Console;
 
-public class ClientManager {
+public class Client {
 
-    public DataInputStream dis;
+    private DataInputStream dis;
 
-    public DataOutputStream dos;
+    private DataOutputStream dos;
 
     private String ip;
 
     private int port;
 
-    private byte[] SECRET_KEY = "sT8w69pzFbuK".getBytes();
+    private final String SECRET_KEY = "sT8w69pzFbuK";
 
     private volatile boolean connected = false;
 
-    private static ClientManager instance;
+    private static Client instance;
 
     /**
      * Singleton pattern to keep a single instance of this class program running
      *
      * @return The instance of the program is returned, if there's none a new one is created
      */
-    public static ClientManager getInstance() {
+    public static Client getInstance() {
         if (instance == null) {
-            instance = new ClientManager();
+            instance = new Client();
         }
 
         return instance;
@@ -47,7 +47,7 @@ public class ClientManager {
     /**
      *
      */
-    private ClientManager() {
+    private Client() {
     }
 
     /**
@@ -118,8 +118,8 @@ public class ClientManager {
         byte[] message = SocketStreams.readBytes(dis);
 
         if (!connected) {
-            if (Arrays.equals(message, SECRET_KEY)) {
-                send(SECRET_KEY);
+            if (Arrays.equals(message, SECRET_KEY.getBytes())) {
+                send(SECRET_KEY.getBytes());
 
                 Console.WriteLine("Client", "Connected to " + ip + ":" + port);
 

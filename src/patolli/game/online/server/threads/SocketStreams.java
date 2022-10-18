@@ -14,7 +14,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.game.utils.Console;
+import patolli.utils.Console;
 
 public final class SocketStreams {
 

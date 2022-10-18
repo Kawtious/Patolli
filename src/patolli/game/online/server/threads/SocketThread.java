@@ -14,8 +14,8 @@ import java.util.Arrays;
 import patolli.game.Player;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.game.online.server.ServerManager;
-import patolli.game.utils.Console;
+import patolli.game.online.server.Server;
+import patolli.utils.Console;
 
 public abstract class SocketThread extends Thread {
 
@@ -33,9 +33,9 @@ public abstract class SocketThread extends Thread {
 
     private volatile boolean connected = false;
 
-    private byte[] SECRET_KEY = "sT8w69pzFbuK".getBytes();
+    private final String SECRET_KEY = "sT8w69pzFbuK";
 
-    public final ServerManager server = ServerManager.getInstance();
+    public final Server server = Server.getInstance();
 
     /**
      *
@@ -85,7 +85,7 @@ public abstract class SocketThread extends Thread {
     private void validate() throws IOException {
         SocketStreams.send(this, SECRET_KEY);
 
-        if (!Arrays.equals(listen(), SECRET_KEY)) {
+        if (!Arrays.equals(listen(), SECRET_KEY.getBytes())) {
             disconnect();
         } else {
             Console.WriteLine("SocketThread", socket.getInetAddress() + " has connected");

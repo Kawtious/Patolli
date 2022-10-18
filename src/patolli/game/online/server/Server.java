@@ -13,9 +13,9 @@ import java.util.List;
 import patolli.game.Player;
 import patolli.game.online.server.threads.SocketProtocol;
 import patolli.game.online.server.threads.SocketThread;
-import patolli.game.utils.Console;
+import patolli.utils.Console;
 
-public class ServerManager {
+public class Server {
 
     private final List<SocketThread> connections = Collections.synchronizedList(new ArrayList<>());
 
@@ -25,16 +25,16 @@ public class ServerManager {
 
     private volatile boolean running = false;
 
-    private static ServerManager instance;
+    private static Server instance;
 
     /**
      * Singleton pattern to keep a single instance of this class program running
      *
      * @return The instance of the program is returned, if there's none a new one is created
      */
-    public static ServerManager getInstance() {
+    public static Server getInstance() {
         if (instance == null) {
-            instance = new ServerManager();
+            instance = new Server();
         }
 
         return instance;
@@ -43,7 +43,7 @@ public class ServerManager {
     /**
      *
      */
-    private ServerManager() {
+    private Server() {
     }
 
     /**

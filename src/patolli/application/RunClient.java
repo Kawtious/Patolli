@@ -4,9 +4,9 @@
  */
 package patolli.application;
 
-import patolli.game.online.ClientManager;
+import patolli.game.online.Client;
 
-public class Client {
+public class RunClient {
 
     private static final String SERVER_IP = "localhost";
     private static final int SERVER_PORT = 95;
@@ -16,7 +16,7 @@ public class Client {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        final ClientManager client = ClientManager.getInstance();
+        final Client client = Client.getInstance();
 
         client.setIp(SERVER_IP);
         client.setPort(SERVER_PORT);

@@ -4,7 +4,7 @@
  */
 package patolli.game;
 
-import java.io.Serializable;
+import patolli.game.configuration.Pregame.Settings;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.threads.SocketStreams;
 import patolli.game.online.server.threads.SocketThread;
@@ -14,9 +14,9 @@ import patolli.game.spaces.Space;
 import patolli.game.spaces.TriangleSpace;
 import patolli.game.utils.GameUtils;
 
-public class Game implements Serializable {
+public class Game {
 
-    private Channel channel;
+    private final Channel channel;
 
     private Board board;
 
@@ -34,14 +34,14 @@ public class Game implements Serializable {
             return false;
         }
 
-        if (!channel.getPregame().getSettings().validate()) {
+        if (!getGameSettings().validate()) {
             SocketStreams.sendTo(channel, "Failed to validate settings");
             return false;
         }
 
         board = new Board(this);
 
-        if (!board.createBoard(channel.getPregame().getSettings().getSquares(), channel.getPregame().getSettings().getTriangles())) {
+        if (!board.createBoard(getGameSettings().getSquares(), getGameSettings().getTriangles())) {
             SocketStreams.sendTo(channel, "Failed to create board");
             return false;
         }
@@ -51,14 +51,14 @@ public class Game implements Serializable {
         playerlist = new Playerlist(this, channel.getPregame().getClients());
         leaderboard = new Leaderboard(channel.getClients());
 
-        SocketStreams.sendTo(channel, "Game has started! It is now player " + playerlist.getCurrent().getPlayer().getName() + "'s turn");
+        SocketStreams.sendTo(channel, "Game has started! It is now player " + getCurrentPlayer().getName() + "'s turn");
 
         return true;
     }
 
     public void play(final Token token) {
-        playerlist.getCurrent().getPlayer().getDice().nextOutcome();
-        SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " got " + playerlist.getCurrent().getPlayer().getDice().getResult() + " after throwing the dice and can move " + playerlist.getCurrent().getPlayer().getDice().getOutcome() + " spaces");
+        getCurrentPlayer().getDice().nextOutcome();
+        SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " got " + getCurrentPlayer().getDice().getResult() + " after throwing the dice and can move " + getCurrentPlayer().getDice().getOutcome() + " spaces");
 
         if (analizeOutcome(token)) {
             playToken(token);
@@ -66,36 +66,36 @@ public class Game implements Serializable {
 
         if (!gameHasEnded()) {
             playerlist.next();
-            SocketStreams.sendTo(channel, "It is now player " + playerlist.getCurrent().getPlayer().getName() + "'s turn");
+            SocketStreams.sendTo(channel, "It is now player " + getCurrentPlayer().getName() + "'s turn");
         } else {
             channel.stopGame();
         }
     }
 
     private boolean analizeOutcome(final Token token) {
-        final int outcome = playerlist.getCurrent().getPlayer().getDice().getOutcome();
+        final int outcome = getCurrentPlayer().getDice().getOutcome();
 
         if (outcome == 0) {
             // p a y
-            if (playerlist.getCurrent().getPlayer().tokensInPlay() != 0) {
-                SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " is unable to move any tokens");
+            if (getCurrentPlayer().tokensInPlay() != 0) {
+                SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " is unable to move any tokens");
 
-                GameUtils.payEveryone(this, channel.getPregame().getSettings().getBet(), playerlist.getCurrent(), playerlist.getClients());
+                GameUtils.payEveryone(this, getGameSettings().getBet(), playerlist.getCurrent(), playerlist.getClients());
 
                 if (canContinue(playerlist.getCurrent())) {
-                    playerlist.getCurrent().getPlayer().selectNextToken();
+                    getCurrentPlayer().selectNextToken();
 
-                    SocketStreams.sendTo(channel, "Selecting token " + playerlist.getCurrent().getPlayer().getCurrentToken().getIndex() + " of player " + playerlist.getCurrent().getPlayer().getName());
+                    SocketStreams.sendTo(channel, "Selecting token " + getCurrentPlayer().getCurrentToken().getIndex() + " of player " + getCurrentPlayer().getName());
+                    return false;
                 }
-            } else {
-                SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + "'s turn is skipped");
             }
 
+            SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + "'s turn is skipped");
             return false;
         }
 
-        if (playerlist.getCurrent().getPlayer().countTokens() < channel.getPregame().getSettings().getMaxTokens()) {
-            if (playerlist.getCurrent().getPlayer().tokensInPlay() == 0) {
+        if (getCurrentPlayer().countTokens() < getGameSettings().getMaxTokens()) {
+            if (getCurrentPlayer().tokensInPlay() == 0) {
                 insertToken();
                 return false;
             }
@@ -115,17 +115,17 @@ public class Game implements Serializable {
         Token selectedToken = token;
 
         if (selectedToken == null) {
-            selectedToken = playerlist.getCurrent().getPlayer().getCurrentToken();
+            selectedToken = getCurrentPlayer().getCurrentToken();
         } else {
-            if (!selectedToken.equals(playerlist.getCurrent().getPlayer().getCurrentToken())) {
-                SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " pays " + channel.getPregame().getSettings().getBet() + " to move token " + selectedToken.getIndex() + " at position " + selectedToken.getCurrentPos());
+            if (!selectedToken.equals(getCurrentPlayer().getCurrentToken())) {
+                SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " pays " + getGameSettings().getBet() + " to move token " + selectedToken.getIndex() + " at position " + selectedToken.getCurrentPos());
 
-                GameUtils.payEveryone(this, channel.getPregame().getSettings().getBet(), playerlist.getCurrent(), playerlist.getClients());
+                GameUtils.payEveryone(this, getGameSettings().getBet(), playerlist.getCurrent(), playerlist.getClients());
             }
         }
 
         if (canContinue(playerlist.getCurrent())) {
-            final int nextPos = selectedToken.getCurrentPos() + playerlist.getCurrent().getPlayer().getDice().getOutcome();
+            final int nextPos = selectedToken.getCurrentPos() + getCurrentPlayer().getDice().getOutcome();
 
             moveToken(selectedToken, nextPos);
         }
@@ -136,10 +136,10 @@ public class Game implements Serializable {
 
         if (!board.willCollide(token.getOwner(), nextPos)) {
             if (!board.willTokenFinish(token, nextPos)) {
-                SocketStreams.sendTo(channel, "Token " + token.getIndex() + " of player " + playerlist.getCurrent().getPlayer().getName() + " moves to space occupied by " + nextSpace.getOwner().getName());
+                SocketStreams.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space occupied by " + nextSpace.getOwner().getName());
 
                 if (nextSpace instanceof CentralSpace) {
-                    SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " destroys " + nextSpace.getOwner().getName() + "'s tokens at position " + nextPos);
+                    SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " destroys " + nextSpace.getOwner().getName() + "'s tokens at position " + nextPos);
 
                     for (Token token1 : nextSpace.list()) {
                         token1.setCurrentPos(-1);
@@ -147,43 +147,43 @@ public class Game implements Serializable {
 
                     board.move(token, nextPos);
                 } else {
-                    SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " returns to previous position");
+                    SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " returns to previous position");
                 }
 
-                playerlist.getCurrent().getPlayer().selectNextToken();
+                getCurrentPlayer().selectNextToken();
             }
         } else {
             board.move(token, nextPos);
 
-            SocketStreams.sendTo(channel, "Token " + token.getIndex() + " of player " + playerlist.getCurrent().getPlayer().getName() + " moves to space at position " + token.getCurrentPos());
+            SocketStreams.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space at position " + token.getCurrentPos());
 
             if (token.getCurrentPos() >= 0) {
                 if (nextSpace instanceof ExteriorSpace) {
-                    SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " landed on an exterior space");
+                    SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an exterior space");
 
                     playerlist.previous();
                 } else if (nextSpace instanceof TriangleSpace) {
-                    SocketStreams.sendTo(channel, "Player " + playerlist.getCurrent().getPlayer().getName() + " landed on an triangle space");
+                    SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an triangle space");
 
-                    GameUtils.payEveryone(this, channel.getPregame().getSettings().getBet() * 2, playerlist.getCurrent(), playerlist.getClients());
+                    GameUtils.payEveryone(this, getGameSettings().getBet() * 2, playerlist.getCurrent(), playerlist.getClients());
 
                     if (canContinue(playerlist.getCurrent())) {
-                        playerlist.getCurrent().getPlayer().selectNextToken();
+                        getCurrentPlayer().selectNextToken();
                     }
                 } else {
-                    playerlist.getCurrent().getPlayer().selectNextToken();
+                    getCurrentPlayer().selectNextToken();
                 }
             }
         }
     }
 
     private void insertToken() {
-        final Token token = playerlist.getCurrent().getPlayer().createToken(board.getStartPos(playerlist.getTurn()));
+        final Token token = getCurrentPlayer().createToken(board.getStartPos(playerlist.getTurn()));
         board.insert(token, token.getInitialPos());
 
-        playerlist.getCurrent().getPlayer().selectNextToken();
+        getCurrentPlayer().selectNextToken();
 
-        SocketStreams.sendTo(channel, "Inserted token " + token.getIndex() + " in board for player " + playerlist.getCurrent().getPlayer().getName() + " at position " + token.getInitialPos());
+        SocketStreams.sendTo(channel, "Inserted token " + token.getIndex() + " in board for player " + getCurrentPlayer().getName() + " at position " + token.getInitialPos());
     }
 
     public boolean canContinue(final SocketThread client) {
@@ -196,7 +196,7 @@ public class Game implements Serializable {
             return false;
         }
 
-        if (client.getPlayer().countTokens() >= channel.getPregame().getSettings().getMaxTokens()) {
+        if (client.getPlayer().countTokens() >= getGameSettings().getMaxTokens()) {
             if (client.getPlayer().tokensInPlay() == 0) {
                 SocketStreams.sendTo(channel, "Player " + client.getPlayer().getName() + " has no more tokens to play with!");
 
@@ -217,6 +217,14 @@ public class Game implements Serializable {
         }
 
         return false;
+    }
+
+    private Player getCurrentPlayer() {
+        return playerlist.getCurrent().getPlayer();
+    }
+
+    private Settings getGameSettings() {
+        return channel.getPregame().getSettings();
     }
 
     public Channel getChannel() {

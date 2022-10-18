@@ -14,11 +14,11 @@ import patolli.game.online.server.threads.SocketThread;
 
 public class Channel extends Connection {
 
-    private Pregame pregame;
+    private final Group group;
+
+    private final Pregame pregame;
 
     private Game game;
-
-    private Group group;
 
     /**
      *
@@ -89,7 +89,6 @@ public class Channel extends Connection {
 
         if (game != null) {
             game.getPlayerlist().remove(client, true);
-            game.getPlayerlist().next();
         }
 
         if (clients.size() < 1) {

@@ -11,7 +11,7 @@ import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
 import patolli.game.spaces.SquareSpace;
 import patolli.game.spaces.TriangleSpace;
-import patolli.game.utils.Console;
+import patolli.utils.Console;
 import patolli.game.utils.GameUtils;
 
 public class Board {

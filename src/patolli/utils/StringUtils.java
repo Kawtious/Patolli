@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game.utils;
+package patolli.utils;
 
 public final class StringUtils {
 
@@ -24,5 +24,8 @@ public final class StringUtils {
     public static boolean isValidHexaCode(String str) {
         // Regex to check valid hexadecimal color code.
         return str.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
+    }
+
+    private StringUtils() {
     }
 }

@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import patolli.game.Player;
 import patolli.game.online.server.threads.SocketThread;
-import patolli.game.utils.Console;
+import patolli.utils.Console;
 
 public class Pregame {
 

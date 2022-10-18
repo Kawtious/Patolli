@@ -58,7 +58,7 @@ public class Group extends Connection {
             }
         }
 
-        ServerManager.getInstance().getGroups().remove(this);
+        Server.getInstance().getGroups().remove(this);
     }
 
     /**
