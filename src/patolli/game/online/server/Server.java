@@ -19,9 +19,9 @@ public class Server {
 
     private final List<SocketThread> connections = Collections.synchronizedList(new ArrayList<>());
 
-    private final List<Group> lobbies = Collections.synchronizedList(new ArrayList<>());
+    private final List<Group> groups = Collections.synchronizedList(new ArrayList<>());
 
-    public int port;
+    private int port;
 
     private volatile boolean running = false;
 
@@ -126,7 +126,7 @@ public class Server {
      */
     public Group createGroup(final SocketThread client, final String name) {
         final Group group = new Group(client, name);
-        lobbies.add(group);
+        groups.add(group);
         return group;
     }
 
@@ -139,7 +139,7 @@ public class Server {
      */
     public Group createGroup(final SocketThread client, final String name, final String password) {
         final Group group = new Group(client, name, password);
-        lobbies.add(group);
+        groups.add(group);
         return group;
     }
 
@@ -149,7 +149,7 @@ public class Server {
      */
     public void removeGroup(final Group group) {
         group.destroy();
-        lobbies.remove(group);
+        groups.remove(group);
     }
 
     /**
@@ -173,7 +173,7 @@ public class Server {
      * @return
      */
     public List<Group> getGroups() {
-        return lobbies;
+        return groups;
     }
 
 }
