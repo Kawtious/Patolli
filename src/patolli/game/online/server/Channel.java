@@ -38,6 +38,7 @@ public class Channel extends Connection {
         client.setGroup(null);
 
         add(client);
+        this.operators.add(client);
         this.operators.addAll(operators);
     }
 
@@ -60,6 +61,7 @@ public class Channel extends Connection {
         client.setGroup(null);
 
         add(client);
+        this.operators.add(client);
         this.operators.addAll(operators);
     }
 
@@ -88,7 +90,7 @@ public class Channel extends Connection {
         clients.remove(client);
 
         if (game != null) {
-            game.getPlayerlist().remove(client, true);
+            game.getPlayerlist().remove(client);
         }
 
         if (clients.size() < 1) {
@@ -103,6 +105,10 @@ public class Channel extends Connection {
         if (game != null) {
             SocketStreams.sendTo(this, "A game is already running in this channel");
             return;
+        }
+
+        for (SocketThread client : clients) {
+            client.getPlayer().getBalance().set(pregame.getSettings().getInitBalance());
         }
 
         pregame.getClients().addAll(clients);

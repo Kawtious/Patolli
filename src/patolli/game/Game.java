@@ -57,14 +57,14 @@ public class Game {
     }
 
     public void play(final Token token) {
-        getCurrentPlayer().getDice().nextOutcome();
-        SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " got " + getCurrentPlayer().getDice().getResult() + " after throwing the dice and can move " + getCurrentPlayer().getDice().getOutcome() + " spaces");
-
-        if (analizeOutcome(token)) {
-            playToken(token);
-        }
-
         if (!gameHasEnded()) {
+            getCurrentPlayer().getDice().nextOutcome();
+            SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " got " + getCurrentPlayer().getDice().getResult() + " after throwing the dice and can move " + getCurrentPlayer().getDice().getOutcome() + " spaces");
+
+            if (analizeOutcome(token)) {
+                playToken(token);
+            }
+
             playerlist.next();
             SocketStreams.sendTo(channel, "It is now player " + getCurrentPlayer().getName() + "'s turn");
         } else {
@@ -118,6 +118,12 @@ public class Game {
             selectedToken = getCurrentPlayer().getCurrentToken();
         } else {
             if (!selectedToken.equals(getCurrentPlayer().getCurrentToken())) {
+                if (getCurrentPlayer().getBalance().get() < getGameSettings().getBet()) {
+                    SocketStreams.send(playerlist.getCurrent(), "Your balance is too low to select a token");
+
+                    selectedToken = getCurrentPlayer().getCurrentToken();
+                }
+
                 SocketStreams.sendTo(channel, "Player " + getCurrentPlayer().getName() + " pays " + getGameSettings().getBet() + " to move token " + selectedToken.getIndex() + " at position " + selectedToken.getCurrentPos());
 
                 GameUtils.payEveryone(this, getGameSettings().getBet(), playerlist.getCurrent(), playerlist.getClients());
@@ -192,7 +198,7 @@ public class Game {
 
             SocketStreams.sendTo(channel, "Removing player " + client.getPlayer().getName() + " from game");
 
-            playerlist.remove(client, true);
+            playerlist.remove(client);
             return false;
         }
 
@@ -200,7 +206,7 @@ public class Game {
             if (client.getPlayer().tokensInPlay() == 0) {
                 SocketStreams.sendTo(channel, "Player " + client.getPlayer().getName() + " has no more tokens to play with!");
 
-                playerlist.remove(client, false);
+                playerlist.remove(client);
                 return false;
             }
         }

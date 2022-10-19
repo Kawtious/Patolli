@@ -9,10 +9,10 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import patolli.game.Player;
+import patolli.game.Token;
 import patolli.game.online.ClientUtils;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.game.Token;
 import patolli.utils.Authentication;
 import patolli.utils.Console;
 import patolli.utils.StringUtils;
@@ -174,6 +174,9 @@ public class SocketProtocol extends SocketThread {
             case "/setmaxtokens" -> {
                 pregameCommand.setMaxTokens(getSyntax(syntaxes, 1));
             }
+            case "/setBalance" -> {
+                pregameCommand.setBalance(getSyntax(syntaxes, 1));
+            }
 
             // Game
             case "/play" -> {
@@ -252,6 +255,8 @@ public class SocketProtocol extends SocketThread {
             sb.append("/setbet");
             sb.append(", ");
             sb.append("/setmaxtokens");
+            sb.append(", ");
+            sb.append("/setbalance");
 
             sb.append("\n");
 
@@ -793,6 +798,11 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
+            if (getChannel().getGame() != null) {
+                SocketStreams.send(getOuter(), "Game has already started");
+                return;
+            }
+
             if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You need to be an operator in order to start the game");
                 return;
@@ -828,6 +838,16 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
+            if (getChannel().getGame() != null) {
+                SocketStreams.send(getOuter(), "Game has already started");
+                return;
+            }
+
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "Only operators can change settings");
+                return;
+            }
+
             if (string.isEmpty()) {
                 SocketStreams.send(getOuter(), "You need to specify the number of squares for the board");
                 return;
@@ -857,6 +877,16 @@ public class SocketProtocol extends SocketThread {
         public void setTriangles(final String string) {
             if (getChannel() == null) {
                 SocketStreams.send(getOuter(), "You need to be in a channel to change game settings");
+                return;
+            }
+
+            if (getChannel().getGame() != null) {
+                SocketStreams.send(getOuter(), "Game has already started");
+                return;
+            }
+
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "Only operators can change settings");
                 return;
             }
 
@@ -892,6 +922,16 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
+            if (getChannel().getGame() != null) {
+                SocketStreams.send(getOuter(), "Game has already started");
+                return;
+            }
+
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "Only operators can change settings");
+                return;
+            }
+
             if (string.isEmpty()) {
                 SocketStreams.send(getOuter(), "You need to set a valid bet");
                 return;
@@ -924,6 +964,16 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
+            if (getChannel().getGame() != null) {
+                SocketStreams.send(getOuter(), "Game has already started");
+                return;
+            }
+
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "Only operators can change settings");
+                return;
+            }
+
             if (string.isEmpty()) {
                 SocketStreams.send(getOuter(), "You need to set a valid amount of tokens");
                 return;
@@ -944,6 +994,48 @@ public class SocketProtocol extends SocketThread {
             getChannel().getPregame().getSettings().setMaxTokens(maxTokens);
 
             SocketStreams.sendTo(getChannel(), "Max tokens set to " + getChannel().getPregame().getSettings().getMaxTokens());
+        }
+
+        /**
+         *
+         * @param string
+         */
+        public void setBalance(final String string) {
+            if (getChannel() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a channel to change game settings");
+                return;
+            }
+
+            if (getChannel().getGame() != null) {
+                SocketStreams.send(getOuter(), "Game has already started");
+                return;
+            }
+
+            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "Only operators can change settings");
+                return;
+            }
+
+            if (string.isEmpty()) {
+                SocketStreams.send(getOuter(), "You need to set a valid amount");
+                return;
+            }
+
+            if (!StringUtils.isNumeric(string)) {
+                SocketStreams.send(getOuter(), "Argument is not valid");
+                return;
+            }
+
+            final int balance = Integer.parseInt(string);
+
+            if (balance < 0) {
+                SocketStreams.send(getOuter(), "Balance must not be 0 and must be positive");
+                return;
+            }
+
+            getChannel().getPregame().getSettings().setInitBalance(balance);
+
+            SocketStreams.sendTo(getChannel(), "Initial Balance set to " + getChannel().getPregame().getSettings().getInitBalance());
         }
 
         /**

@@ -70,11 +70,14 @@ public class Pregame {
 
         private int maxTokens;
 
+        private int initBalance;
+
         private final int DEFAULT_MAXPLAYERS = 4,
                 DEFAULT_SQUARES = 3,
                 DEFAULT_TRIANGLES = 2,
                 DEFAULT_BET = 5,
-                DEFAULT_MAXTOKENS = 3;
+                DEFAULT_MAXTOKENS = 3,
+                DEFAULT_INITBALANCE = 100;
 
         public Settings() {
             this.maxPlayers = DEFAULT_MAXPLAYERS;
@@ -82,19 +85,26 @@ public class Pregame {
             this.triangles = DEFAULT_TRIANGLES;
             this.bet = DEFAULT_BET;
             this.maxTokens = DEFAULT_MAXTOKENS;
+            this.initBalance = DEFAULT_INITBALANCE;
         }
 
-        public Settings(int maxPlayers, int squares, int triangles, int bet, int maxTokens) {
+        public Settings(int maxPlayers, int squares, int triangles, int bet, int maxTokens, int initBalance) {
             this.maxPlayers = maxPlayers;
             this.squares = squares;
             this.triangles = triangles;
             this.bet = bet;
             this.maxTokens = maxTokens;
+            this.initBalance = DEFAULT_INITBALANCE;
         }
 
         public boolean validate() {
             if (bet < 5) {
                 Console.WriteLine("Settings", "Bet has to be greater than 5 in order to play");
+                return false;
+            }
+
+            if (bet > initBalance / 3) {
+                Console.WriteLine("Settings", "Bet too big");
                 return false;
             }
 
@@ -149,6 +159,14 @@ public class Pregame {
 
         public void setMaxTokens(int maxTokens) {
             this.maxTokens = maxTokens;
+        }
+
+        public int getInitBalance() {
+            return initBalance;
+        }
+
+        public void setInitBalance(int initBalance) {
+            this.initBalance = initBalance;
         }
 
         @Override
