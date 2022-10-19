@@ -6,12 +6,14 @@ package patolli.game;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Player {
 
-    private final UUID id;
+    private final UUID id = UUID.randomUUID();
 
     private Balance balance;
 
@@ -21,12 +23,11 @@ public class Player {
 
     private Color color;
 
-    private final ArrayList<Token> tokens = new ArrayList<>();
+    private final List<Token> tokens = new ArrayList<>();
 
     private int currentToken = 0;
 
     public Player() {
-        this.id = UUID.randomUUID();
         this.name = "DEFAULT";
         this.color = Color.GRAY;
         this.balance = new Balance();
@@ -34,27 +35,10 @@ public class Player {
     }
 
     public Player(final String name, final Color color) {
-        this.id = UUID.randomUUID();
         this.name = name;
         this.color = color;
         this.balance = new Balance();
         this.dice = new Dice();
-    }
-
-    public Player(final String name, final Color color, final Balance balance) {
-        this.id = UUID.randomUUID();
-        this.name = name;
-        this.color = color;
-        this.balance = balance;
-        this.dice = new Dice();
-    }
-
-    public Player(final String name, final Color color, final Balance balance, final Dice dice) {
-        this.id = UUID.randomUUID();
-        this.name = name;
-        this.color = color;
-        this.balance = balance;
-        this.dice = dice;
     }
 
     public Token getCurrentToken() {
@@ -97,7 +81,7 @@ public class Player {
     }
 
     public boolean tokenIsInPlay(final Token token) {
-        return token.getCurrentPos() >= 0;
+        return token.getPosition() >= 0;
     }
 
     public boolean hasTokens() {
@@ -112,7 +96,7 @@ public class Player {
         int count = 0;
 
         for (Token token : tokens) {
-            if (token.getCurrentPos() == -2) {
+            if (token.getPosition() == -2) {
                 count++;
             }
         }
@@ -174,8 +158,8 @@ public class Player {
         this.color = color;
     }
 
-    public ArrayList<Token> getTokens() {
-        return tokens;
+    public List<Token> getTokens() {
+        return Collections.unmodifiableList(tokens);
     }
 
     public Balance getBalance() {
@@ -199,17 +183,16 @@ public class Player {
         return name;
     }
 
-    public static class Balance {
+    public class Balance {
 
         private final int DEFAULT_BALANCE = 100;
 
-        private int balance;
+        private int balance = DEFAULT_BALANCE;
 
         public Balance() {
-            this.balance = DEFAULT_BALANCE;
         }
 
-        public Balance(final int balance) {
+        protected Balance(final int balance) {
             this.balance = balance;
         }
 
@@ -244,9 +227,10 @@ public class Player {
 
     }
 
-    public static class Dice {
+    public class Dice {
 
         private int result;
+
         private int outcome;
 
         public Dice() {

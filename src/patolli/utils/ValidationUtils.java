@@ -4,7 +4,7 @@
  */
 package patolli.utils;
 
-public final class StringUtils {
+public final class ValidationUtils {
 
     /**
      *
@@ -26,6 +26,6 @@ public final class StringUtils {
         return str.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
     }
 
-    private StringUtils() {
+    private ValidationUtils() {
     }
 }

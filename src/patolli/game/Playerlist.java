@@ -4,106 +4,79 @@
  */
 package patolli.game;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import patolli.game.online.server.threads.SocketThread;
+import patolli.game.online.server.threads.PlayerSocket;
 
 public class Playerlist {
 
-    private final Game game;
-
-    private final List<SocketThread> clients = Collections.synchronizedList(new ArrayList<>());
+    private final List<PlayerSocket> players;
 
     private int turn = 0;
 
-    public Playerlist(final Game game, final List<SocketThread> clients) {
-        this.game = game;
-        this.clients.addAll(clients);
+    public Playerlist(final List<PlayerSocket> players) {
+        this.players = players;
     }
 
-    public void add(final List<SocketThread> clients) {
-        this.clients.addAll(clients);
-    }
-
-    public void remove(final SocketThread client) {
-        game.getBoard().removeTokensOf(client.getPlayer());
-
-        if (client.getPlayer().getBalance().isBroke()) {
-            client.getPlayer().clearTokens();
+    public void remove(final PlayerSocket player) {
+        if (player.getPlayer().getBalance().isBroke()) {
+            player.getPlayer().clearTokens();
         }
 
-        if (client.equals(getCurrent())) {
-            next();
+        if (player.equals(getCurrent())) {
+            nextTurn();
         }
 
-        clients.remove(client);
+        players.remove(player);
+        System.out.println(players.size());
     }
 
-    public SocketThread getCurrent() {
-        return clients.get(turn);
+    public PlayerSocket getCurrent() {
+        return players.get(turn);
     }
 
-    public SocketThread get(final int index) {
-        return clients.get(index);
-    }
-
-    public int getTurnOf(final SocketThread client) {
-        for (int i = 0; i < clients.size(); i++) {
-            if (clients.get(i).equals(client)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    public SocketThread getNext() {
+    public PlayerSocket getNext() {
         int index = turn + 1;
 
-        if (index >= clients.size()) {
+        if (index >= players.size()) {
             index = 0;
         }
 
-        return get(index);
+        return players.get(index);
     }
 
-    public SocketThread getPrev() {
+    public PlayerSocket getPrev() {
         int index = turn - 1;
 
         if (index < 0) {
-            index = clients.size() - 1;
+            index = players.size() - 1;
         }
 
-        return get(index);
+        return players.get(index);
     }
 
-    public void next() {
+    public void nextTurn() {
         turn++;
 
-        if (turn >= clients.size()) {
+        if (turn >= players.size()) {
             turn = 0;
         }
     }
 
-    public void previous() {
+    public void prevTurn() {
         turn--;
 
         if (turn < 0) {
-            turn = clients.size() - 1;
+            turn = players.size() - 1;
         }
-    }
-
-    public Game getGame() {
-        return game;
     }
 
     public int getTurn() {
         return turn;
     }
 
-    public List<SocketThread> getClients() {
-        return clients;
+    public List<PlayerSocket> getPlayers() {
+        return Collections.unmodifiableList(players);
     }
 
 }

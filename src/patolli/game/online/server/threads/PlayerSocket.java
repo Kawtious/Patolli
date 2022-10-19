@@ -5,29 +5,37 @@
 package patolli.game.online.server.threads;
 
 import java.awt.Color;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import patolli.game.Player;
 import patolli.game.Token;
-import patolli.game.online.ClientUtils;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
+import patolli.game.online.server.GroupUtils;
+import patolli.game.online.server.Server;
 import patolli.utils.Authentication;
 import patolli.utils.Console;
-import patolli.utils.StringUtils;
+import patolli.utils.ValidationUtils;
 
-public class SocketProtocol extends SocketThread {
+public class PlayerSocket extends Thread implements IClientSocket {
 
-    private Command command = new Command();
+    private final Socket socket;
 
-    private PlayerCommand playerCommand = new PlayerCommand();
+    private final DataInputStream dis;
 
-    private PregameCommand pregameCommand = new PregameCommand();
+    private final DataOutputStream dos;
 
-    private GameCommand gameCommand = new GameCommand();
+    private Group group;
 
-    private final Authentication auth = new Authentication();
+    private Channel channel;
+
+    private volatile boolean connected = true;
+
+    private Player player;
 
     /**
      *
@@ -35,9 +43,71 @@ public class SocketProtocol extends SocketThread {
      * @param player
      * @throws IOException
      */
-    public SocketProtocol(final Socket socket, final Player player) throws IOException {
-        super(socket, player);
-        command = new Command();
+    public PlayerSocket(final Socket socket, final Player player) throws IOException {
+        this.player = player;
+        this.socket = socket;
+        dis = new DataInputStream(socket.getInputStream());
+        dos = new DataOutputStream(socket.getOutputStream());
+    }
+
+    /**
+     *
+     */
+    @Override
+    public void run() {
+        try (socket; dos; dis) {
+            while (connected) {
+                listen();
+            }
+
+            Console.WriteLine("PlayerSocket", player.getName() + " disconnected from server");
+        } catch (IOException ex) {
+            Logger.getLogger(IClientSocket.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public byte[] listen() {
+        try {
+            byte[] input = SocketStreams.readBytes(dis);
+
+            if (connected) {
+                execute(input);
+            }
+
+            return input;
+        } catch (final IOException ex) {
+            disconnect();
+        }
+
+        return new byte[1];
+    }
+
+    /**
+     *
+     * @param msg
+     * @throws IOException
+     */
+    @Override
+    public void execute(final byte[] msg) throws IOException {
+        final String input = new String(msg);
+
+        if (validateCommand(input)) {
+            executeCommand(input);
+        } else {
+            if (getChannel() != null) {
+                SocketStreams.sendTo(getChannel(), getPlayer().getName() + ": " + input);
+            } else if (getGroup() != null) {
+                // send messages
+                SocketStreams.sendTo(getGroup(), getPlayer().getName() + ": " + input);
+            }
+        }
+
+        Console.WriteLine("PlayerSocket", getPlayer().getName() + ": " + input);
     }
 
     /**
@@ -71,28 +141,7 @@ public class SocketProtocol extends SocketThread {
         return syntaxes[index];
     }
 
-    /**
-     *
-     * @param msg
-     * @throws IOException
-     */
-    @Override
-    public void execute(final byte[] msg) throws IOException {
-        final String input = new String(msg);
-
-        if (validateCommand(input)) {
-            executeCommand(input);
-        } else {
-            if (getChannel() != null) {
-                SocketStreams.sendTo(getChannel(), getPlayer().getName() + ": " + input);
-            } else if (getGroup() != null) {
-                // send messages
-                SocketStreams.sendTo(getGroup(), getPlayer().getName() + ": " + input);
-            }
-        }
-
-        Console.WriteLine("SocketProtocol", getPlayer().getName() + ": " + input);
-    }
+    private final Commands commands = new Commands();
 
     /**
      *
@@ -104,98 +153,175 @@ public class SocketProtocol extends SocketThread {
         final String execute = syntaxes[0];
 
         switch (execute) {
-            case "/help" -> {
-                command.help();
+            case "/help", "/?" -> {
+                commands.help();
             }
-            case "/?" -> {
-                command.help();
+            case "/leavegroup", "/leavelobby" -> {
+                commands.leaveGroup();
             }
-            case "/leavegroup" -> {
-                command.leaveGroup();
+            case "/leavechannel", "/leaveroom" -> {
+                commands.leaveChannel();
             }
-            case "/leavechannel" -> {
-                command.leaveChannel();
-            }
-            case "/joinchannel" -> {
-                command.joinChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            case "/joinchannel", "/joinroom" -> {
+                commands.joinChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
             }
             case "/disconnect" -> {
-                command.disconnect();
+                commands.disconnect();
             }
-            case "/joingroup" -> {
-                command.joinGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            case "/joingroup", "/joinlobby" -> {
+                commands.joinGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
             }
-            case "/creategroup" -> {
-                command.createGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            case "/creategroup", "/createlobby" -> {
+                commands.createGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
             }
-            case "/createchannel" -> {
-                command.createChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            case "/createchannel", "/createroom" -> {
+                commands.createChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
             }
             case "/kick" -> {
-                command.kick(getSyntax(syntaxes, 1));
+                commands.kick(getSyntax(syntaxes, 1));
             }
             case "/ban" -> {
-                command.ban(getSyntax(syntaxes, 1));
+                commands.ban(getSyntax(syntaxes, 1));
             }
             case "/op" -> {
-                command.op(getSyntax(syntaxes, 1));
+                commands.op(getSyntax(syntaxes, 1));
             }
             case "/deop" -> {
-                command.deop(getSyntax(syntaxes, 1));
+                commands.deop(getSyntax(syntaxes, 1));
             }
             case "/list" -> {
-                command.list();
+                commands.list();
             }
 
             // Player
-            case "/setname" -> {
-                playerCommand.setPlayerName(getSyntax(syntaxes, 1));
+            case "/setname", "/nickname", "/name" -> {
+                commands.setPlayerName(getSyntax(syntaxes, 1));
             }
             case "/setcolor" -> {
-                playerCommand.setColor(getSyntax(syntaxes, 1));
+                commands.setColor(getSyntax(syntaxes, 1));
             }
 
-            // Pregame
+            // Settings
             case "/startgame" -> {
-                pregameCommand.startGame();
+                commands.startGame();
             }
             case "/stopgame" -> {
-                pregameCommand.stopGame();
+                commands.stopGame();
             }
             case "/setsquares" -> {
-                pregameCommand.setSquares(getSyntax(syntaxes, 1));
-            }
-            case "/settriangles" -> {
-                pregameCommand.setTriangles(getSyntax(syntaxes, 1));
+                commands.setSquares(getSyntax(syntaxes, 1));
             }
             case "/setbet" -> {
-                pregameCommand.setBet(getSyntax(syntaxes, 1));
+                commands.setBet(getSyntax(syntaxes, 1));
             }
             case "/setmaxtokens" -> {
-                pregameCommand.setMaxTokens(getSyntax(syntaxes, 1));
+                commands.setMaxTokens(getSyntax(syntaxes, 1));
             }
-            case "/setBalance" -> {
-                pregameCommand.setBalance(getSyntax(syntaxes, 1));
+            case "/setbalance" -> {
+                commands.setBalance(getSyntax(syntaxes, 1));
             }
 
             // Game
             case "/play" -> {
-                gameCommand.play(getSyntax(syntaxes, 1));
+                commands.play(getSyntax(syntaxes, 1));
             }
 
             // Unknown
             default -> {
-                command.unknown(getSyntax(syntaxes, 0));
+                commands.unknown(getSyntax(syntaxes, 0));
             }
         }
     }
 
-    public class Command {
+    /**
+     *
+     */
+    @Override
+    public void disconnect() {
+        if (channel != null) {
+            channel.kick(this);
+        }
+
+        if (group != null) {
+            group.kick(this);
+        }
+
+        this.connected = false;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public Group getGroup() {
+        return group;
+    }
+
+    /**
+     *
+     * @param group
+     */
+    @Override
+    public void setGroup(Group group) {
+        this.group = group;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public Channel getChannel() {
+        return channel;
+    }
+
+    /**
+     *
+     * @param channel
+     */
+    @Override
+    public void setChannel(final Channel channel) {
+        this.channel = channel;
+    }
+
+    @Override
+    public Socket getSocket() {
+        return socket;
+    }
+
+    @Override
+    public DataInputStream getDis() {
+        return dis;
+    }
+
+    @Override
+    public DataOutputStream getDos() {
+        return dos;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Player getPlayer() {
+        return player;
+    }
+
+    /**
+     *
+     * @param player
+     */
+    public void setPlayer(Player player) {
+        this.player = player;
+    }
+
+    public class Commands {
 
         /**
          *
          */
-        public Command() {
+        public Commands() {
         }
 
         /**
@@ -212,17 +338,29 @@ public class SocketProtocol extends SocketThread {
             sb.append(", ");
             sb.append("/leavegroup");
             sb.append(", ");
+            sb.append("/leavelobby");
+            sb.append(", ");
             sb.append("/leavechannel");
             sb.append(", ");
+            sb.append("/leaveroom");
+            sb.append(", ");
             sb.append("/joinchannel");
+            sb.append(", ");
+            sb.append("/joinroom");
             sb.append(", ");
             sb.append("/disconnect");
             sb.append(", ");
             sb.append("/joingroup");
             sb.append(", ");
+            sb.append("/joinlobby");
+            sb.append(", ");
             sb.append("/creategroup");
             sb.append(", ");
+            sb.append("/createlobby");
+            sb.append(", ");
             sb.append("/createchannel");
+            sb.append(", ");
+            sb.append("/createroom");
             sb.append(", ");
             sb.append("/kick");
             sb.append(", ");
@@ -239,18 +377,20 @@ public class SocketProtocol extends SocketThread {
             // Player
             sb.append("/setname");
             sb.append(", ");
+            sb.append("/nickname");
+            sb.append(", ");
+            sb.append("/name");
+            sb.append(", ");
             sb.append("/setcolor");
 
             sb.append("\n");
 
-            // Pregame
+            // Settings
             sb.append("/startgame");
             sb.append(", ");
             sb.append("/stopgame");
             sb.append(", ");
             sb.append("/setsquares");
-            sb.append(", ");
-            sb.append("/settriangles");
             sb.append(", ");
             sb.append("/setbet");
             sb.append(", ");
@@ -305,7 +445,7 @@ public class SocketProtocol extends SocketThread {
          * @param entry
          */
         public void joinChannel(final String argument, final String entry) {
-            if (!StringUtils.isNumeric(argument)) {
+            if (!ValidationUtils.isNumeric(argument)) {
                 SocketStreams.send(getOuter(), "You didn't select a valid channel");
                 return;
             }
@@ -320,7 +460,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (retrieveChannels().isEmpty()) {
+            if (getGroup().getChannels().isEmpty()) {
                 SocketStreams.send(getOuter(), "This group has no channels");
                 return;
             }
@@ -332,14 +472,14 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (index >= retrieveChannels().size()) {
+            if (index >= getGroup().getChannels().size()) {
                 SocketStreams.send(getOuter(), "The channel you selected is invalid");
                 return;
             }
 
-            Channel channel = retrieveChannels().get(index);
+            Channel channel = getGroup().getChannels().get(index);
 
-            if (ClientUtils.isBanned(channel.getBlacklist(), getOuter())) {
+            if (GroupUtils.isBanned(channel.getBlacklist(), getOuter())) {
                 SocketStreams.send(getOuter(), "You are banned from the channel");
                 return;
             }
@@ -350,7 +490,7 @@ public class SocketProtocol extends SocketThread {
                     return;
                 }
 
-                if (!auth.authenticate(entry.toCharArray(), channel.getPassword())) {
+                if (!Authentication.authenticate(entry.toCharArray(), channel.getPassword())) {
                     SocketStreams.send(getOuter(), "Wrong password");
                     return;
                 }
@@ -378,7 +518,7 @@ public class SocketProtocol extends SocketThread {
          * @param entry
          */
         public void joinGroup(final String argument, final String entry) {
-            if (!StringUtils.isNumeric(argument)) {
+            if (!ValidationUtils.isNumeric(argument)) {
                 SocketStreams.send(getOuter(), "You didn't select a valid group");
                 return;
             }
@@ -388,7 +528,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (retrieveGroups().isEmpty()) {
+            if (Server.getInstance().getGroups().isEmpty()) {
                 SocketStreams.send(getOuter(), "No groups are available");
                 return;
             }
@@ -400,14 +540,14 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (index >= retrieveGroups().size()) {
+            if (index >= Server.getInstance().getGroups().size()) {
                 SocketStreams.send(getOuter(), "You didn't select a valid group");
                 return;
             }
 
-            Group group = retrieveGroups().get(index);
+            Group group = Server.getInstance().getGroups().get(index);
 
-            if (ClientUtils.isBanned(group.getBlacklist(), getOuter())) {
+            if (GroupUtils.isBanned(group.getBlacklist(), getOuter())) {
                 SocketStreams.send(getOuter(), "You are banned from the group");
                 return;
             }
@@ -418,17 +558,17 @@ public class SocketProtocol extends SocketThread {
                     return;
                 }
 
-                if (!auth.authenticate(entry.toCharArray(), group.getPassword())) {
+                if (!Authentication.authenticate(entry.toCharArray(), group.getPassword())) {
                     SocketStreams.send(getOuter(), "Wrong password");
                     return;
                 }
 
-                server.addClientToGroup(group, getOuter());
+                Server.getInstance().addClientToGroup(group, getOuter());
                 SocketStreams.send(getOuter(), "Joined group " + getGroup().getName());
                 return;
             }
 
-            server.addClientToGroup(group, getOuter());
+            Server.getInstance().addClientToGroup(group, getOuter());
 
             SocketStreams.sendTo(getGroup(), getOuter().getPlayer().getName() + " joined the group");
         }
@@ -445,9 +585,9 @@ public class SocketProtocol extends SocketThread {
             }
 
             if (!password.isEmpty()) {
-                server.createGroup(getOuter(), name, password);
+                Server.getInstance().createGroup(getOuter(), name, password);
             } else {
-                server.createGroup(getOuter(), name);
+                Server.getInstance().createGroup(getOuter(), name);
             }
 
             SocketStreams.send(getOuter(), "Created group " + getGroup().getName());
@@ -488,7 +628,7 @@ public class SocketProtocol extends SocketThread {
          * @param argument
          */
         public void kick(final String argument) {
-            if (!StringUtils.isNumeric(argument)) {
+            if (!ValidationUtils.isNumeric(argument)) {
                 SocketStreams.send(getOuter(), "You need to select the index of a player");
                 return;
             }
@@ -501,33 +641,38 @@ public class SocketProtocol extends SocketThread {
             int index = Integer.parseInt(argument);
 
             if (getChannel() != null) {
-                if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                     SocketStreams.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                SocketThread client = getChannel().getClients().get(index);
+                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                
+                if (client.equals(getOuter())) {
+                    SocketStreams.send(getOuter(), "You cannot kick yourself");
+                    return;
+                }
 
                 getChannel().kick(client);
 
                 SocketStreams.send(client, "You have been kicked from the channel");
 
-                SocketStreams.sendTo(getChannel(), client.getPlayer().getName() + " was kicked from channel");
+                SocketStreams.sendTo(getChannel(), client.getPlayer().getName() + " was kicked from the channel");
                 return;
             }
 
-            if (!ClientUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            SocketThread client = getGroup().getClients().get(index);
+            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
 
             getGroup().kick(client);
 
             SocketStreams.send(client, "You have been kicked from the channel");
 
-            SocketStreams.sendTo(getGroup(), client.getPlayer().getName() + " was kicked from channel");
+            SocketStreams.sendTo(getGroup(), client.getPlayer().getName() + " was kicked from the channel");
         }
 
         /**
@@ -535,7 +680,7 @@ public class SocketProtocol extends SocketThread {
          * @param argument
          */
         public void ban(final String argument) {
-            if (!StringUtils.isNumeric(argument)) {
+            if (!ValidationUtils.isNumeric(argument)) {
                 SocketStreams.send(getOuter(), "You need to select the index of a player");
                 return;
             }
@@ -548,33 +693,38 @@ public class SocketProtocol extends SocketThread {
             int index = Integer.parseInt(argument);
 
             if (getChannel() != null) {
-                if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                     SocketStreams.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                SocketThread client = getChannel().getClients().get(index);
+                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                
+                if (client.equals(getOuter())) {
+                    SocketStreams.send(getOuter(), "You cannot ban yourself");
+                    return;
+                }
 
                 getChannel().ban(client);
 
                 SocketStreams.send(client, "You have been banned from the channel");
 
-                SocketStreams.sendTo(getChannel(), client.getPlayer().getName() + " was banned from channel");
+                SocketStreams.sendTo(getChannel(), client.getPlayer().getName() + " was banned from the channel");
                 return;
             }
 
-            if (!ClientUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            SocketThread client = getGroup().getClients().get(index);
+            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
 
             getGroup().ban(client);
 
             SocketStreams.send(client, "You have been banned from the group");
 
-            SocketStreams.sendTo(getGroup(), client.getPlayer().getName() + " was banned from group");
+            SocketStreams.sendTo(getGroup(), client.getPlayer().getName() + " was banned from the group");
         }
 
         /**
@@ -582,7 +732,7 @@ public class SocketProtocol extends SocketThread {
          * @param argument
          */
         public void op(final String argument) {
-            if (!StringUtils.isNumeric(argument)) {
+            if (!ValidationUtils.isNumeric(argument)) {
                 SocketStreams.send(getOuter(), "Argument is not valid");
                 return;
             }
@@ -595,14 +745,19 @@ public class SocketProtocol extends SocketThread {
             int index = Integer.parseInt(argument);
 
             if (getChannel() != null) {
-                if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                     SocketStreams.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                SocketThread client = getChannel().getClients().get(index);
+                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                
+                if (client.equals(getOuter())) {
+                    SocketStreams.send(getOuter(), "You cannot make yourself an operator");
+                    return;
+                }
 
-                if (ClientUtils.isOperator(getChannel().getOperators(), client)) {
+                if (GroupUtils.isOperator(getChannel().getOperators(), client)) {
                     SocketStreams.send(getOuter(), client.getPlayer().getName() + " is already an operator");
                     return;
                 }
@@ -615,12 +770,12 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            SocketThread client = getGroup().getClients().get(index);
+            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
 
             SocketStreams.send(getOuter(), client.getPlayer().getName() + " is now an operator");
 
@@ -636,7 +791,7 @@ public class SocketProtocol extends SocketThread {
          * @param argument
          */
         public void deop(final String argument) {
-            if (!StringUtils.isNumeric(argument)) {
+            if (!ValidationUtils.isNumeric(argument)) {
                 SocketStreams.send(getOuter(), "Argument is not valid");
                 return;
             }
@@ -649,14 +804,19 @@ public class SocketProtocol extends SocketThread {
             int index = Integer.parseInt(argument);
 
             if (getChannel() != null) {
-                if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                     SocketStreams.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                SocketThread client = getChannel().getClients().get(index);
+                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                
+                if (client.equals(getOuter())) {
+                    SocketStreams.send(getOuter(), "You cannot remove your own operator privileges");
+                    return;
+                }
 
-                if (!ClientUtils.isOperator(getChannel().getOperators(), client)) {
+                if (!GroupUtils.isOperator(getChannel().getOperators(), client)) {
                     SocketStreams.send(getOuter(), client.getPlayer().getName() + " is not an operator");
                     return;
                 }
@@ -669,12 +829,12 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            SocketThread client = getGroup().getClients().get(index);
+            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
 
             getGroup().deop(client);
 
@@ -687,8 +847,8 @@ public class SocketProtocol extends SocketThread {
          *
          */
         public void list() {
-            if (getGroup() == null) {
-                SocketStreams.send(getOuter(), "You need to be in a group first");
+            if (getGroup() == null && getChannel() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a group or a channel for that");
                 return;
             }
 
@@ -699,8 +859,9 @@ public class SocketProtocol extends SocketThread {
                     return;
                 }
 
-                for (SocketThread client : getChannel().getClients()) {
-                    sb.append(client.getPlayer().getName()).append(", ");
+                for (IClientSocket client : getChannel().getClients()) {
+                    PlayerSocket player = (PlayerSocket) client;
+                    sb.append(player.getPlayer().getName()).append(", ");
                 }
 
                 sb.delete(sb.length() - 2, sb.length());
@@ -713,8 +874,9 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            for (SocketThread client : getGroup().getClients()) {
-                sb.append(client.getPlayer().getName()).append(", ");
+            for (IClientSocket client : getGroup().getClients()) {
+                PlayerSocket player = (PlayerSocket) client;
+                sb.append(player.getPlayer().getName()).append(", ");
             }
 
             sb.delete(sb.length() - 2, sb.length());
@@ -725,34 +887,6 @@ public class SocketProtocol extends SocketThread {
         public void unknown(final String command) {
             SocketStreams.send(getOuter(), "Unknown command: " + command);
         }
-
-        /**
-         *
-         * @return
-         */
-        public List<Group> retrieveGroups() {
-            return server.getGroups();
-        }
-
-        /**
-         *
-         * @return
-         */
-        public List<Channel> retrieveChannels() {
-            return getGroup().getChannels();
-        }
-
-        /**
-         *
-         * @return
-         */
-        private SocketProtocol getOuter() {
-            return SocketProtocol.this;
-        }
-
-    }
-
-    public class PlayerCommand {
 
         /**
          *
@@ -768,7 +902,7 @@ public class SocketProtocol extends SocketThread {
          * @param rgb
          */
         public void setColor(final String rgb) {
-            if (!StringUtils.isValidHexaCode(rgb)) {
+            if (!ValidationUtils.isValidHexaCode(rgb)) {
                 SocketStreams.send(getOuter(), "You need to specify a color with the hex format #XXXXXX");
                 return;
             }
@@ -776,18 +910,6 @@ public class SocketProtocol extends SocketThread {
             getPlayer().setColor(Color.decode(rgb));
             SocketStreams.send(getOuter(), "Color set to " + Integer.toHexString(getPlayer().getColor().getRGB()));
         }
-
-        /**
-         *
-         * @return
-         */
-        private SocketProtocol getOuter() {
-            return SocketProtocol.this;
-        }
-
-    }
-
-    public class PregameCommand {
 
         /**
          *
@@ -803,7 +925,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "You need to be an operator in order to start the game");
                 return;
             }
@@ -820,7 +942,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "Only an operator can stop the game");
                 return;
             }
@@ -843,7 +965,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -853,7 +975,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!StringUtils.isNumeric(string)) {
+            if (!ValidationUtils.isNumeric(string)) {
                 SocketStreams.send(getOuter(), "Argument is not valid");
                 return;
             }
@@ -865,51 +987,9 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            getChannel().getPregame().getSettings().setSquares(squares);
+            getChannel().getSettings().getPreferences().setSquares(squares);
 
-            SocketStreams.sendTo(getChannel(), "Squares set to " + getChannel().getPregame().getSettings().getSquares());
-        }
-
-        /**
-         *
-         * @param string
-         */
-        public void setTriangles(final String string) {
-            if (getChannel() == null) {
-                SocketStreams.send(getOuter(), "You need to be in a channel to change game settings");
-                return;
-            }
-
-            if (getChannel().getGame() != null) {
-                SocketStreams.send(getOuter(), "Game has already started");
-                return;
-            }
-
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
-                SocketStreams.send(getOuter(), "Only operators can change settings");
-                return;
-            }
-
-            if (string.isEmpty()) {
-                SocketStreams.send(getOuter(), "You need to specify the number of triangles for the board");
-                return;
-            }
-
-            if (!StringUtils.isNumeric(string)) {
-                SocketStreams.send(getOuter(), "Argument is not valid");
-                return;
-            }
-
-            final int triangles = Integer.parseInt(string);
-
-            if (triangles <= 0) {
-                SocketStreams.send(getOuter(), "Number of triangles must not be 0 and must be positive");
-                return;
-            }
-
-            getChannel().getPregame().getSettings().setTriangles(triangles);
-
-            SocketStreams.sendTo(getChannel(), "Triangles set to " + getChannel().getPregame().getSettings().getTriangles());
+            SocketStreams.sendTo(getChannel(), "Squares set to " + getChannel().getSettings().getPreferences().getSquares());
         }
 
         /**
@@ -927,7 +1007,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -937,7 +1017,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!StringUtils.isNumeric(string)) {
+            if (!ValidationUtils.isNumeric(string)) {
                 SocketStreams.send(getOuter(), "Argument is not valid");
                 return;
             }
@@ -949,9 +1029,9 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            getChannel().getPregame().getSettings().setBet(bet);
+            getChannel().getSettings().getPreferences().setBet(bet);
 
-            SocketStreams.sendTo(getChannel(), "Bet set to " + getChannel().getPregame().getSettings().getBet());
+            SocketStreams.sendTo(getChannel(), "Bet set to " + getChannel().getSettings().getPreferences().getBet());
         }
 
         /**
@@ -969,7 +1049,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -979,7 +1059,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!StringUtils.isNumeric(string)) {
+            if (!ValidationUtils.isNumeric(string)) {
                 SocketStreams.send(getOuter(), "Argument is not valid");
                 return;
             }
@@ -991,9 +1071,9 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            getChannel().getPregame().getSettings().setMaxTokens(maxTokens);
+            getChannel().getSettings().getPreferences().setMaxTokens(maxTokens);
 
-            SocketStreams.sendTo(getChannel(), "Max tokens set to " + getChannel().getPregame().getSettings().getMaxTokens());
+            SocketStreams.sendTo(getChannel(), "Max tokens set to " + getChannel().getSettings().getPreferences().getMaxTokens());
         }
 
         /**
@@ -1011,7 +1091,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!ClientUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
                 SocketStreams.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -1021,7 +1101,7 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            if (!StringUtils.isNumeric(string)) {
+            if (!ValidationUtils.isNumeric(string)) {
                 SocketStreams.send(getOuter(), "Argument is not valid");
                 return;
             }
@@ -1033,22 +1113,10 @@ public class SocketProtocol extends SocketThread {
                 return;
             }
 
-            getChannel().getPregame().getSettings().setInitBalance(balance);
+            getChannel().getSettings().getPreferences().setInitBalance(balance);
 
-            SocketStreams.sendTo(getChannel(), "Initial Balance set to " + getChannel().getPregame().getSettings().getInitBalance());
+            SocketStreams.sendTo(getChannel(), "Initial Balance set to " + getChannel().getSettings().getPreferences().getInitBalance());
         }
-
-        /**
-         *
-         * @return
-         */
-        private SocketProtocol getOuter() {
-            return SocketProtocol.this;
-        }
-
-    }
-
-    public class GameCommand {
 
         /**
          *
@@ -1073,12 +1141,12 @@ public class SocketProtocol extends SocketThread {
             Token token = null;
 
             if (!string.isEmpty()) {
-                if (StringUtils.isNumeric(string)) {
+                if (ValidationUtils.isNumeric(string)) {
                     final int index = Integer.parseInt(string);
 
                     if (index >= 0) {
                         if (index < getPlayer().countTokens()) {
-                            if (getPlayer().getToken(index).getCurrentPos() >= 0) {
+                            if (getPlayer().getToken(index).getPosition() >= 0) {
                                 token = getPlayer().getToken(index);
                             }
                         }
@@ -1093,8 +1161,8 @@ public class SocketProtocol extends SocketThread {
          *
          * @return
          */
-        private SocketProtocol getOuter() {
-            return SocketProtocol.this;
+        private PlayerSocket getOuter() {
+            return PlayerSocket.this;
         }
 
     }

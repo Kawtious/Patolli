@@ -5,47 +5,49 @@
 package patolli.game.spaces;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import patolli.game.Player;
 import patolli.game.Token;
 
 public abstract class Space {
 
-    private final ArrayList<Token> tokens = new ArrayList<>();
+    private final List<Token> tokens = new ArrayList<>();
 
-    public ArrayList<Token> list() {
-        return tokens;
-    }
-
-    public Token get(final int index) {
+    public Token getToken(final int index) {
         return tokens.get(index);
     }
 
-    public void set(final int index, final Token token) {
+    public void setToken(final int index, final Token token) {
         tokens.set(index, token);
     }
 
-    public void insert(final Token token) {
+    public void insertToken(final Token token) {
         tokens.add(token);
     }
 
-    public void remove(final Token token) {
+    public void removeToken(final Token token) {
         tokens.remove(token);
     }
 
-    public void clear() {
+    public void clearTokens() {
         tokens.clear();
     }
 
-    public boolean isEmpty() {
+    public boolean hasNoTokens() {
         return !tokens.isEmpty();
     }
 
     public Player getOwner() {
-        if (isEmpty()) {
+        if (hasNoTokens()) {
             return tokens.get(0).getOwner();
         }
 
         return null;
+    }
+
+    public List<Token> getTokens() {
+        return Collections.unmodifiableList(tokens);
     }
 
 }

@@ -28,12 +28,12 @@ public final class Authentication {
     /**
      * Each token produced by this class uses this identifier as a prefix.
      */
-    public static final String ID = "$31$";
+    private static final String ID = "$31$";
 
     /**
      * The minimum recommended cost, used by default
      */
-    public static final int DEFAULT_COST = 16;
+    private static final int DEFAULT_COST = 16;
 
     private static final String ALGORITHM = "PBKDF2WithHmacSHA1";
 
@@ -41,25 +41,9 @@ public final class Authentication {
 
     private static final Pattern LAYOUT = Pattern.compile("\\$31\\$(\\d\\d?)\\$(.{43})");
 
-    private final SecureRandom random;
+    private static final SecureRandom random = new SecureRandom();
 
-    private final int cost;
-
-    public Authentication() {
-        this(DEFAULT_COST);
-    }
-
-    /**
-     * Create a password manager with a specified cost
-     *
-     * @param cost the exponential computational cost of hashing a password, 0 to 30
-     */
-    public Authentication(int cost) {
-        iterations(cost);
-        /* Validate cost */
-        this.cost = cost;
-        this.random = new SecureRandom();
-    }
+    private static final int COST = DEFAULT_COST;
 
     private static int iterations(int cost) {
         if ((cost < 0) || (cost > 30)) {
@@ -74,15 +58,15 @@ public final class Authentication {
      * @param password
      * @return a secure authentication token to be stored for later authentication
      */
-    public String hash(char[] password) {
+    public static String hash(char[] password) {
         byte[] salt = new byte[SIZE / 8];
         random.nextBytes(salt);
-        byte[] dk = pbkdf2(password, salt, 1 << cost);
+        byte[] dk = pbkdf2(password, salt, 1 << COST);
         byte[] hash = new byte[salt.length + dk.length];
         System.arraycopy(salt, 0, hash, 0, salt.length);
         System.arraycopy(dk, 0, hash, salt.length, dk.length);
         Base64.Encoder enc = Base64.getUrlEncoder().withoutPadding();
-        return ID + cost + '$' + enc.encodeToString(hash);
+        return ID + COST + '$' + enc.encodeToString(hash);
     }
 
     /**
@@ -92,7 +76,7 @@ public final class Authentication {
      * @param token
      * @return true if the password and token match
      */
-    public boolean authenticate(char[] password, String token) {
+    public static boolean authenticate(char[] password, String token) {
         Matcher m = LAYOUT.matcher(token);
         if (!m.matches()) {
             throw new IllegalArgumentException("Invalid token format");

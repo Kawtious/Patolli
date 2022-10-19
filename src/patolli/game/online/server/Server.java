@@ -8,20 +8,24 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import patolli.game.Player;
-import patolli.game.online.server.threads.SocketProtocol;
-import patolli.game.online.server.threads.SocketThread;
+import patolli.game.online.server.threads.IClientSocket;
+import patolli.game.online.server.threads.PlayerSocket;
+import patolli.game.online.server.threads.SocketStreams;
 import patolli.utils.Console;
 
 public class Server {
 
-    private final List<SocketThread> connections = Collections.synchronizedList(new ArrayList<>());
+    private final List<IClientSocket> connections = Collections.synchronizedList(new ArrayList<>());
 
     private final List<Group> groups = Collections.synchronizedList(new ArrayList<>());
 
     private int port;
+
+    private final String SECRET_KEY = "sT8w69pzFbuK";
 
     private volatile boolean running = false;
 
@@ -90,8 +94,11 @@ public class Server {
             while (running) {
                 try {
                     Socket socket = server.accept();
+                    IClientSocket client = new PlayerSocket(socket, new Player());
 
-                    add(new SocketProtocol(socket, new Player()));
+                    if (validate(client)) {
+                        add(client);
+                    }
                 } catch (final IOException ex) {
                 }
             }
@@ -100,10 +107,24 @@ public class Server {
 
     /**
      *
+     */
+    private boolean validate(IClientSocket client) throws IOException {
+        SocketStreams.send(client, SECRET_KEY);
+
+        if (Arrays.equals(client.listen(), SECRET_KEY.getBytes())) {
+            Console.WriteLine("Server", client.getSocket().getInetAddress() + " has connected");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     *
      * @param thread
      * @throws IOException
      */
-    private void add(final SocketThread thread) throws IOException {
+    private void add(final IClientSocket thread) throws IOException {
         connections.add(thread);
         thread.start();
     }
@@ -113,7 +134,7 @@ public class Server {
      * @param group
      * @param client
      */
-    public void addClientToGroup(final Group group, final SocketThread client) {
+    public void addClientToGroup(final Group group, final IClientSocket client) {
         client.setGroup(group);
         group.add(client);
     }
@@ -124,9 +145,15 @@ public class Server {
      * @param name
      * @return
      */
-    public Group createGroup(final SocketThread client, final String name) {
-        final Group group = new Group(client, name);
+    public Group createGroup(final IClientSocket client, final String name) {
+        final Group group = new Group(name);
         groups.add(group);
+
+        client.setGroup(group);
+
+        group.add(client);
+        group.op(client);
+
         return group;
     }
 
@@ -137,9 +164,15 @@ public class Server {
      * @param password
      * @return
      */
-    public Group createGroup(final SocketThread client, final String name, final String password) {
-        final Group group = new Group(client, name, password);
+    public Group createGroup(final IClientSocket client, final String name, final String password) {
+        final Group group = new Group(name, password);
         groups.add(group);
+
+        client.setGroup(group);
+
+        group.add(client);
+        group.op(client);
+
         return group;
     }
 
@@ -152,12 +185,16 @@ public class Server {
         groups.remove(group);
     }
 
+    public List<Group> getGroups() {
+        return Collections.unmodifiableList(groups);
+    }
+
     /**
      *
      * @return
      */
-    public List<SocketThread> getConnections() {
-        return connections;
+    public List<IClientSocket> getConnections() {
+        return Collections.unmodifiableList(connections);
     }
 
     /**
@@ -166,14 +203,6 @@ public class Server {
      */
     public void setPort(int port) {
         this.port = port;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public List<Group> getGroups() {
-        return groups;
     }
 
 }

@@ -5,53 +5,45 @@
 package patolli.game;
 
 import java.util.ArrayList;
-import patolli.game.online.server.threads.SocketStreams;
+import java.util.List;
 import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
 import patolli.game.spaces.SquareSpace;
 import patolli.game.spaces.TriangleSpace;
-import patolli.game.utils.GameUtils;
-import patolli.utils.Console;
 
 public class Board {
 
-    private final Game game;
+    private final List<Space> spaces = new ArrayList<>();
 
-    private final ArrayList<Space> spaces = new ArrayList<>();
-
-    public Board(final Game game) {
-        this.game = game;
+    public Board() {
     }
 
-    public boolean createBoard(final int squares, final int triangles) {
-        if ((squares + triangles + 2) * 2 > 14) {
+    public boolean createBoard(final int squares) {
+        if ((squares + 2 + 2) * 2 > 14) {
             return false;
         }
 
         for (int index = 0; index < 4; index++) {
-            addBlade(squares, triangles);
+            addBlade(squares);
             addCenters();
         }
 
-        SocketStreams.sendTo(game.getChannel(), "Created board of size " + getSize());
-
-        for (Space space : spaces) {
-            Console.WriteLine("Board", space.toString());
-        }
-
+        //for (Space space : spaces) {
+        //    Console.WriteLine("Board", space.toString());
+        //}
         return true;
     }
 
-    private void addBlade(final int squares, final int triangles) {
+    private void addBlade(final int squares) {
         for (int side = 0; side < 2; side++) {
             if (side == 0) {
                 addSquares(squares);
-                addTriangles(triangles);
+                addTriangles();
                 addExteriors();
             } else {
                 addExteriors();
-                addTriangles(triangles);
+                addTriangles();
                 addSquares(squares);
             }
         }
@@ -63,8 +55,8 @@ public class Board {
         }
     }
 
-    private void addTriangles(final int amount) {
-        for (int index = 0; index < amount; index++) {
+    private void addTriangles() {
+        for (int index = 0; index < 2; index++) {
             spaces.add(new TriangleSpace());
         }
     }
@@ -82,17 +74,17 @@ public class Board {
     }
 
     public void insert(final Token token, final int pos) {
-        token.setCurrentPos(pos);
-        getSpace(pos).insert(token);
+        token.setPosition(pos);
+        getSpace(pos).insertToken(token);
     }
 
     public void remove(final Token token) {
-        getSpace(token.getCurrentPos()).remove(token);
+        getSpace(token.getPosition()).removeToken(token);
     }
 
     public void removeTokensOf(final Player player) {
         for (Token token : player.getTokens()) {
-            if (token.getCurrentPos() >= 0) {
+            if (token.getPosition() >= 0) {
                 remove(token);
             }
         }
@@ -107,13 +99,7 @@ public class Board {
 
         remove(token);
 
-        if (willTokenFinish(token, nextPos)) {
-            SocketStreams.sendTo(game.getChannel(), "Token " + token.getIndex() + " of player " + token.getOwner() + " has successfully looped around the board");
-
-            token.markAsFinished();
-
-            GameUtils.everyonePays(game, game.getChannel().getPregame().getSettings().getBet(), game.getPlayerlist().getClients(), game.getPlayerlist().getCurrent());
-        } else {
+        if (!willTokenFinish(token, nextPos)) {
             insert(token, newPos);
         }
     }
@@ -124,21 +110,13 @@ public class Board {
 
     public boolean willTokenFinish(final Token token, final int nextPos) {
         final int initialPos = token.getInitialPos();
-        final int prevPos = token.getCurrentPos();
+        final int prevPos = token.getPosition();
 
         if (nextPos >= getSize()) {
-            if (nextPos - getSize() >= initialPos) {
-                return true;
-            } else {
-                return false;
-            }
+            return nextPos - getSize() >= initialPos;
         }
 
-        if (prevPos < initialPos && nextPos >= initialPos) {
-            return true;
-        }
-
-        return false;
+        return prevPos < initialPos && nextPos >= initialPos;
     }
 
     public int getStartPos(final int turn) {
@@ -158,10 +136,6 @@ public class Board {
         }
 
         return spaces.get(position);
-    }
-
-    public ArrayList<Space> getSpaces() {
-        return spaces;
     }
 
 }

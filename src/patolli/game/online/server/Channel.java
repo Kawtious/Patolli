@@ -4,19 +4,29 @@
  */
 package patolli.game.online.server;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import patolli.game.Game;
-import patolli.game.configuration.Pregame;
-import patolli.game.configuration.Pregame.Settings;
+import patolli.game.configuration.Settings;
+import patolli.game.configuration.Settings.Preferences;
+import patolli.game.online.server.threads.IClientSocket;
+import patolli.game.online.server.threads.PlayerSocket;
 import patolli.game.online.server.threads.SocketStreams;
-import patolli.game.online.server.threads.SocketThread;
+import patolli.utils.Authentication;
 
-public class Channel extends Connection {
+public class Channel implements IConnection {
+
+    private UUID id = UUID.randomUUID();
+
+    private String name = "";
+
+    private String password = "";
 
     private final Group group;
 
-    private final Pregame pregame;
+    private Settings settings = new Settings(new Preferences());
 
     private Game game;
 
@@ -27,19 +37,9 @@ public class Channel extends Connection {
      * @param operators
      * @param name
      */
-    public Channel(final Group group, final SocketThread client, final List<SocketThread> operators, final String name) {
-        pregame = new Pregame(new Settings());
-        id = UUID.randomUUID();
+    public Channel(final Group group, final String name) {
         this.group = group;
         this.name = name;
-        password = "";
-
-        client.setChannel(Channel.this);
-        client.setGroup(null);
-
-        add(client);
-        this.operators.add(client);
-        this.operators.addAll(operators);
     }
 
     /**
@@ -50,52 +50,10 @@ public class Channel extends Connection {
      * @param name
      * @param password
      */
-    public Channel(final Group group, final SocketThread client, final List<SocketThread> operators, final String name, final String password) {
-        pregame = new Pregame(new Settings());
-        id = UUID.randomUUID();
+    public Channel(final Group group, final String name, final String password) {
         this.group = group;
         this.name = name;
-        this.password = auth.hash(password.toCharArray());
-
-        client.setChannel(Channel.this);
-        client.setGroup(null);
-
-        add(client);
-        this.operators.add(client);
-        this.operators.addAll(operators);
-    }
-
-    /**
-     *
-     */
-    @Override
-    public void destroy() {
-        if (!clients.isEmpty()) {
-            for (SocketThread client : clients) {
-                kick(client);
-            }
-        }
-
-        group.getChannels().remove(this);
-    }
-
-    /**
-     *
-     * @param client
-     */
-    @Override
-    public void kick(final SocketThread client) {
-        client.setChannel(null);
-        client.setGroup(group);
-        clients.remove(client);
-
-        if (game != null) {
-            game.getPlayerlist().remove(client);
-        }
-
-        if (clients.size() < 1) {
-            destroy();
-        }
+        this.password = Authentication.hash(password.toCharArray());
     }
 
     /**
@@ -107,11 +65,17 @@ public class Channel extends Connection {
             return;
         }
 
-        for (SocketThread client : clients) {
-            client.getPlayer().getBalance().set(pregame.getSettings().getInitBalance());
+        List<PlayerSocket> players = new ArrayList<>();
+
+        for (int i = 0; i < settings.getPreferences().getMaxPlayers() && i < clients.size(); i++) {
+            players.add((PlayerSocket) clients.get(i));
         }
 
-        pregame.getClients().addAll(clients);
+        for (PlayerSocket client : players) {
+            client.getPlayer().getBalance().set(settings.getPreferences().getInitBalance());
+        }
+
+        settings.add(players);
 
         game = new Game(this);
 
@@ -127,7 +91,7 @@ public class Channel extends Connection {
         }
 
         game = null;
-
+        settings = new Settings(new Preferences());
         SocketStreams.sendTo(this, "Game has stopped");
     }
 
@@ -143,8 +107,8 @@ public class Channel extends Connection {
      *
      * @return
      */
-    public Pregame getPregame() {
-        return pregame;
+    public Settings getSettings() {
+        return settings;
     }
 
     /**
@@ -153,6 +117,172 @@ public class Channel extends Connection {
      */
     public Game getGame() {
         return game;
+    }
+
+    private final List<IClientSocket> clients = Collections.synchronizedList(new ArrayList<>());
+
+    private final List<IClientSocket> operators = Collections.synchronizedList(new ArrayList<>());
+
+    private final List<IClientSocket> blacklist = Collections.synchronizedList(new ArrayList<>());
+
+    /**
+     *
+     */
+    @Override
+    public void destroy() {
+        if (!clients.isEmpty()) {
+            for (IClientSocket client : clients) {
+                kick(client);
+            }
+        }
+
+        group.getChannels().remove(this);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void add(final IClientSocket client) {
+        clients.add(client);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void kick(final IClientSocket client) {
+        client.setChannel(null);
+        client.setGroup(group);
+        clients.remove(client);
+
+        if (game != null) {
+            game.getPlayerlist().remove((PlayerSocket) client);
+        }
+
+        if (clients.size() < 1) {
+            destroy();
+        }
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void ban(final IClientSocket client) {
+        kick(client);
+        blacklist.add(client);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void op(final IClientSocket client) {
+        operators.add(client);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void deop(final IClientSocket client) {
+        operators.remove(client);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public UUID getId() {
+        return id;
+    }
+
+    /**
+     *
+     * @param id
+     */
+    @Override
+    public void setId(final UUID id) {
+        this.id = id;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    /**
+     *
+     * @param name
+     */
+    @Override
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public boolean hasPassword() {
+        return !password.isEmpty();
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     *
+     * @param password
+     */
+    @Override
+    public void setPassword(final char[] password) {
+        this.password = Authentication.hash(password);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public List<IClientSocket> getClients() {
+        return Collections.unmodifiableList(clients);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public List<IClientSocket> getOperators() {
+        return Collections.unmodifiableList(operators);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public List<IClientSocket> getBlacklist() {
+        return Collections.unmodifiableList(blacklist);
     }
 
 }

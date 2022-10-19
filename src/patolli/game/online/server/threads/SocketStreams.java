@@ -14,7 +14,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.utils.Console;
 
 public final class SocketStreams {
 
@@ -106,13 +105,12 @@ public final class SocketStreams {
 
     /**
      *
-     * @param client
+     * @param socket
      * @param message
      */
-    public static void send(final SocketThread client, final byte[] message) {
+    public static void send(final IClientSocket client, final byte[] message) {
         try {
-            Console.WriteLine("SocketStreams/" + client.getPlayer().getName(), new String(message));
-            sendBytes(client.getOutput(), message);
+            sendBytes(client.getDos(), message);
         } catch (IOException ex) {
         }
     }
@@ -123,7 +121,7 @@ public final class SocketStreams {
      * @param message
      */
     public static void sendTo(final Channel channel, final byte[] message) {
-        for (SocketThread client : channel.getClients()) {
+        for (IClientSocket client : channel.getClients()) {
             send(client, message);
         }
     }
@@ -134,7 +132,7 @@ public final class SocketStreams {
      * @param message
      */
     public static void sendTo(final Group group, final byte[] message) {
-        for (SocketThread client : group.getClients()) {
+        for (IClientSocket client : group.getClients()) {
             if (client.getChannel() == null) {
                 send(client, message);
             }
@@ -146,7 +144,7 @@ public final class SocketStreams {
      * @param client
      * @param message
      */
-    public static void send(final SocketThread client, final String message) {
+    public static void send(final IClientSocket client, final String message) {
         send(client, message.getBytes());
     }
 
@@ -166,6 +164,9 @@ public final class SocketStreams {
      */
     public static void sendTo(final Group group, final String message) {
         sendTo(group, message.getBytes());
+    }
+
+    private SocketStreams() {
     }
 
 }

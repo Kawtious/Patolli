@@ -2,12 +2,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game.online;
+package patolli.game.online.server;
 
 import java.util.List;
-import patolli.game.online.server.threads.SocketThread;
+import patolli.game.online.server.threads.IClientSocket;
 
-public final class ClientUtils {
+public final class GroupUtils {
 
     /**
      *
@@ -15,7 +15,7 @@ public final class ClientUtils {
      * @param client
      * @return
      */
-    public static boolean isBanned(final List<SocketThread> list, final SocketThread client) {
+    public static boolean isBanned(final List<IClientSocket> list, final IClientSocket client) {
         return list.contains(client);
     }
 
@@ -25,8 +25,11 @@ public final class ClientUtils {
      * @param client
      * @return
      */
-    public static boolean isOperator(final List<SocketThread> list, final SocketThread client) {
+    public static boolean isOperator(final List<IClientSocket> list, final IClientSocket client) {
         return list.contains(client);
+    }
+
+    private GroupUtils() {
     }
 
 }

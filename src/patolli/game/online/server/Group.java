@@ -8,9 +8,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import patolli.game.online.server.threads.SocketThread;
+import patolli.game.online.server.threads.IClientSocket;
+import patolli.utils.Authentication;
 
-public class Group extends Connection {
+public class Group implements IConnection {
+
+    private UUID id = UUID.randomUUID();
+
+    private String name = "";
+
+    private String password = "";
 
     private final List<Channel> channels = Collections.synchronizedList(new ArrayList<>());
 
@@ -19,15 +26,8 @@ public class Group extends Connection {
      * @param client
      * @param name
      */
-    public Group(final SocketThread client, final String name) {
-        id = UUID.randomUUID();
+    public Group(final String name) {
         this.name = name;
-        password = "";
-
-        client.setGroup(Group.this);
-
-        add(client);
-        operators.add(client);
     }
 
     /**
@@ -36,44 +36,9 @@ public class Group extends Connection {
      * @param name
      * @param password
      */
-    public Group(final SocketThread client, final String name, final String password) {
-        id = UUID.randomUUID();
+    public Group(final String name, final String password) {
         this.name = name;
-        this.password = auth.hash(password.toCharArray());
-
-        client.setGroup(Group.this);
-
-        add(client);
-        operators.add(client);
-    }
-
-    /**
-     *
-     */
-    @Override
-    public void destroy() {
-        if (!clients.isEmpty()) {
-            for (SocketThread client : clients) {
-                kick(client);
-            }
-        }
-
-        Server.getInstance().getGroups().remove(this);
-    }
-
-    /**
-     *
-     * @param client
-     */
-    @Override
-    public void kick(final SocketThread client) {
-        client.setChannel(null);
-        client.setGroup(null);
-        clients.remove(client);
-
-        if (clients.size() < 1) {
-            destroy();
-        }
+        this.password = Authentication.hash(password.toCharArray());
     }
 
     /**
@@ -82,9 +47,16 @@ public class Group extends Connection {
      * @param name
      * @return
      */
-    public Channel createChannel(final SocketThread client, final String name) {
-        final Channel channel = new Channel(this, client, operators, name);
+    public Channel createChannel(final IClientSocket client, final String name) {
+        final Channel channel = new Channel(this, name);
         channels.add(channel);
+
+        client.setChannel(channel);
+        client.setGroup(null);
+
+        channel.add(client);
+        channel.op(client);
+
         return channel;
     }
 
@@ -95,9 +67,16 @@ public class Group extends Connection {
      * @param password
      * @return
      */
-    public Channel createChannel(final SocketThread client, final String name, final String password) {
-        final Channel channel = new Channel(this, client, operators, name, password);
+    public Channel createChannel(final IClientSocket client, final String name, final String password) {
+        final Channel channel = new Channel(this, name, password);
         channels.add(channel);
+
+        client.setChannel(channel);
+        client.setGroup(null);
+
+        channel.add(client);
+        channel.op(client);
+
         return channel;
     }
 
@@ -115,7 +94,7 @@ public class Group extends Connection {
      * @param channel
      * @param client
      */
-    public void addClientToChannel(final Channel channel, final SocketThread client) {
+    public void addClientToChannel(final Channel channel, final IClientSocket client) {
         client.setChannel(channel);
         client.setGroup(null);
         channel.add(client);
@@ -126,7 +105,167 @@ public class Group extends Connection {
      * @return
      */
     public List<Channel> getChannels() {
-        return channels;
+        return Collections.unmodifiableList(channels);
+    }
+
+    private final List<IClientSocket> clients = Collections.synchronizedList(new ArrayList<>());
+
+    private final List<IClientSocket> operators = Collections.synchronizedList(new ArrayList<>());
+
+    private final List<IClientSocket> blacklist = Collections.synchronizedList(new ArrayList<>());
+
+    /**
+     *
+     */
+    @Override
+    public void destroy() {
+        if (!clients.isEmpty()) {
+            for (IClientSocket client : clients) {
+                kick(client);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void add(final IClientSocket client) {
+        clients.add(client);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void kick(final IClientSocket client) {
+        client.setChannel(null);
+        client.setGroup(null);
+        clients.remove(client);
+
+        if (clients.size() < 1) {
+            destroy();
+        }
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void ban(final IClientSocket client) {
+        kick(client);
+        blacklist.add(client);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void op(final IClientSocket client) {
+        operators.add(client);
+    }
+
+    /**
+     *
+     * @param client
+     */
+    @Override
+    public void deop(final IClientSocket client) {
+        operators.remove(client);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public UUID getId() {
+        return id;
+    }
+
+    /**
+     *
+     * @param id
+     */
+    @Override
+    public void setId(final UUID id) {
+        this.id = id;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    /**
+     *
+     * @param name
+     */
+    @Override
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public boolean hasPassword() {
+        return !password.isEmpty();
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     *
+     * @param password
+     */
+    @Override
+    public void setPassword(final char[] password) {
+        this.password = Authentication.hash(password);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public List<IClientSocket> getClients() {
+        return Collections.unmodifiableList(clients);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public List<IClientSocket> getOperators() {
+        return Collections.unmodifiableList(operators);
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public List<IClientSocket> getBlacklist() {
+        return Collections.unmodifiableList(blacklist);
     }
 
 }

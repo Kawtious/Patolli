@@ -94,6 +94,8 @@ public class Client {
                     while (connected) {
                     }
 
+                    Console.Error.WriteLine("Client", "Disconnected from server");
+
                     return true;
                 }
             }
@@ -118,16 +120,22 @@ public class Client {
         byte[] message = SocketStreams.readBytes(dis);
 
         if (!connected) {
-            if (Arrays.equals(message, SECRET_KEY.getBytes())) {
-                send(SECRET_KEY.getBytes());
-
+            if (verify(message)) {
                 Console.WriteLine("Client", "Connected to " + ip + ":" + port);
-
                 connected = true;
             }
         } else {
             Console.WriteLine("Client", new String(message));
         }
+    }
+
+    private boolean verify(byte[] message) {
+        if (Arrays.equals(message, SECRET_KEY.getBytes())) {
+            send(SECRET_KEY.getBytes());
+            return true;
+        }
+
+        return false;
     }
 
     /**
