@@ -26,7 +26,7 @@ public class Leaderboard {
                     if (winner.getPlayer().finishedTokens() < client.getPlayer().finishedTokens()) {
                         winner = client;
                     } else if (winner.getPlayer().finishedTokens() == client.getPlayer().finishedTokens()) {
-                        if (winner.getPlayer().getBalance().compare(client.getPlayer()) > 0) {
+                        if (winner.getPlayer().getBalance().compare(client.getPlayer()) < 0) {
                             winner = client;
                         }
                     }
