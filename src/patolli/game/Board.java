@@ -11,12 +11,12 @@ import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
 import patolli.game.spaces.SquareSpace;
 import patolli.game.spaces.TriangleSpace;
-import patolli.utils.Console;
 import patolli.game.utils.GameUtils;
+import patolli.utils.Console;
 
 public class Board {
 
-    private Game game;
+    private final Game game;
 
     private final ArrayList<Space> spaces = new ArrayList<>();
 
