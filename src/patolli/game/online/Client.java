@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Scanner;
-import patolli.game.online.server.threads.SocketStreams;
 import patolli.utils.Console;
+import patolli.utils.SocketHelper;
 
 public class Client {
 
@@ -116,11 +116,11 @@ public class Client {
      */
     private void receive() throws IOException {
         if (!connected) {
-            setup(SocketStreams.readBytes(dis, key));
+            setup(SocketHelper.readBytes(dis, key));
             Console.WriteLine("Client", "Connected to " + ip + ":" + port);
             connected = true;
         } else {
-            byte[] message = SocketStreams.readBytes(dis, key);
+            byte[] message = SocketHelper.readBytes(dis, key);
             Console.WriteLine("Client", new String(message));
         }
     }
@@ -169,7 +169,7 @@ public class Client {
      */
     private void send(byte[] message) {
         try {
-            SocketStreams.sendBytes(dos, message, key);
+            SocketHelper.sendBytes(dos, message, key);
         } catch (IOException ex) {
         }
     }

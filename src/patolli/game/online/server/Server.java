@@ -15,8 +15,8 @@ import java.util.UUID;
 import patolli.game.Player;
 import patolli.game.online.server.threads.IClientSocket;
 import patolli.game.online.server.threads.PlayerSocket;
-import patolli.game.online.server.threads.SocketStreams;
 import patolli.utils.Console;
+import patolli.utils.SocketHelper;
 
 public class Server {
 
@@ -110,7 +110,7 @@ public class Server {
      *
      */
     private boolean validate(IClientSocket client, byte[] key) throws IOException {
-        SocketStreams.send(client, key);
+        SocketHelper.send(client, key);
         client.setKey(key);
 
         if (Arrays.equals(client.listen(), client.getKey())) {

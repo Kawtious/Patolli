@@ -13,7 +13,7 @@ import patolli.game.configuration.Settings;
 import patolli.game.configuration.Settings.Preferences;
 import patolli.game.online.server.threads.IClientSocket;
 import patolli.game.online.server.threads.PlayerSocket;
-import patolli.game.online.server.threads.SocketStreams;
+import patolli.utils.SocketHelper;
 
 public class Channel implements IConnection {
 
@@ -60,7 +60,7 @@ public class Channel implements IConnection {
      */
     public void startGame() {
         if (game != null) {
-            SocketStreams.sendTo(this, "A game is already running in this channel");
+            SocketHelper.sendTo(this, "A game is already running in this channel");
             return;
         }
 
@@ -85,13 +85,13 @@ public class Channel implements IConnection {
 
     public void stopGame() {
         if (game == null) {
-            SocketStreams.sendTo(this, "No game is running");
+            SocketHelper.sendTo(this, "No game is running");
             return;
         }
 
         game = null;
         settings = new Settings(new Preferences());
-        SocketStreams.sendTo(this, "Game has stopped");
+        SocketHelper.sendTo(this, "Game has stopped");
     }
 
     /**

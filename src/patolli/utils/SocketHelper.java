@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game.online.server.threads;
+package patolli.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,9 +14,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.utils.TinkHelper;
+import patolli.game.online.server.threads.IClientSocket;
 
-public final class SocketStreams {
+public final class SocketHelper {
 
     /**
      *
@@ -168,7 +168,7 @@ public final class SocketStreams {
         sendTo(group, message.getBytes());
     }
 
-    private SocketStreams() {
+    private SocketHelper() {
     }
 
 }
