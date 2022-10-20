@@ -9,9 +9,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import patolli.game.Player;
 import patolli.game.Token;
 import patolli.game.online.server.Channel;
@@ -61,20 +65,69 @@ public class PlayerSocket extends Thread implements IClientSocket {
      * @param index
      * @return
      */
-    private String getSyntax(final String[] syntaxes, final int index) {
+    private String getSyntax(final List<String> syntaxes, final int index) {
         if (index < 0) {
             return "";
         }
 
-        if (syntaxes.length == 0) {
+        if (syntaxes.isEmpty()) {
             return "";
         }
 
-        if (index >= syntaxes.length) {
+        if (index >= syntaxes.size()) {
             return "";
         }
 
-        return syntaxes[index];
+        return syntaxes.get(index);
+    }
+
+    /**
+     *
+     * @param groups
+     * @param name
+     * @return
+     */
+    @Override
+    public int findGroupByName(String name) {
+        for (Group group1 : Server.getInstance().getGroups()) {
+            if (group1.getName().equals(name)) {
+                return Server.getInstance().getGroups().indexOf(group1);
+            }
+        }
+        return -1;
+    }
+
+    /**
+     *
+     * @param channels
+     * @param name
+     * @return
+     */
+    @Override
+    public int findChannelByName(String name) {
+        for (Channel channel1 : group.getChannels()) {
+            if (channel1.getName().equals(name)) {
+                return group.getChannels().indexOf(channel1);
+            }
+        }
+        return -1;
+    }
+
+    /**
+     *
+     * @param clients
+     * @param name
+     * @return
+     */
+    @Override
+    public int findClientByName(List<IClientSocket> clients, String name) {
+        for (IClientSocket client : clients) {
+            PlayerSocket player1 = (PlayerSocket) client;
+            if (player1.getPlayer().getName().equals(name)) {
+                return clients.indexOf(player1);
+            }
+        }
+        return -1;
     }
 
     /**
@@ -144,11 +197,11 @@ public class PlayerSocket extends Thread implements IClientSocket {
         if (ValidationUtils.validateCommand(input)) {
             executeCommand(input);
         } else {
-            if (getChannel() != null) {
-                SocketHelper.sendTo(getChannel(), getPlayer().getName() + ": " + input);
-            } else if (getGroup() != null) {
+            if (channel != null) {
+                SocketHelper.sendTo(channel, getPlayer().getName() + ": " + input);
+            } else if (group != null) {
                 // send messages
-                SocketHelper.sendTo(getGroup(), getPlayer().getName() + ": " + input);
+                SocketHelper.sendTo(group, getPlayer().getName() + ": " + input);
             }
         }
     }
@@ -159,12 +212,30 @@ public class PlayerSocket extends Thread implements IClientSocket {
      */
     @Override
     public void executeCommand(final String message) {
-        final String[] syntaxes = message.split("\\s+");
-        final String execute = syntaxes[0];
+        List<String> syntaxes = new ArrayList<>();
+
+        Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(message);
+        while (m.find()) {
+            syntaxes.add(m.group(1).replace("\"", ""));
+        }
+
+        final String execute = getSyntax(syntaxes, 0);
 
         switch (execute) {
             case "/help", "/?" -> {
                 commands.help();
+            }
+            case "/creategroup", "/createlobby" -> {
+                commands.createGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            }
+            case "/createchannel", "/createroom" -> {
+                commands.createChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            }
+            case "/joingroup", "/joinlobby" -> {
+                commands.joinGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            }
+            case "/joinchannel", "/joinroom" -> {
+                commands.joinChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
             }
             case "/leavegroup", "/leavelobby" -> {
                 commands.leaveGroup();
@@ -172,20 +243,8 @@ public class PlayerSocket extends Thread implements IClientSocket {
             case "/leavechannel", "/leaveroom" -> {
                 commands.leaveChannel();
             }
-            case "/joinchannel", "/joinroom" -> {
-                commands.joinChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
-            }
             case "/disconnect" -> {
                 commands.disconnect();
-            }
-            case "/joingroup", "/joinlobby" -> {
-                commands.joinGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
-            }
-            case "/creategroup", "/createlobby" -> {
-                commands.createGroup(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
-            }
-            case "/createchannel", "/createroom" -> {
-                commands.createChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
             }
             case "/setgroupname", "/setlobbyname" -> {
                 commands.setGroupName(getSyntax(syntaxes, 1));
@@ -211,8 +270,14 @@ public class PlayerSocket extends Thread implements IClientSocket {
             case "/deop" -> {
                 commands.deop(getSyntax(syntaxes, 1));
             }
-            case "/list" -> {
-                commands.list();
+            case "/listplayers" -> {
+                commands.listPlayers();
+            }
+            case "/listgroups", "/listlobbies" -> {
+                commands.listGroups();
+            }
+            case "/listchannels", "/listrooms" -> {
+                commands.listChannels();
             }
 
             // Player
@@ -419,7 +484,15 @@ public class PlayerSocket extends Thread implements IClientSocket {
             sb.append(", ");
             sb.append("/deop");
             sb.append(", ");
-            sb.append("/list");
+            sb.append("/listplayers");
+            sb.append(", ");
+            sb.append("/listgroups");
+            sb.append(", ");
+            sb.append("/listlobbies");
+            sb.append(", ");
+            sb.append("/listchannels");
+            sb.append(", ");
+            sb.append("/listrooms");
 
             sb.append("\n");
 
@@ -457,173 +530,6 @@ public class PlayerSocket extends Thread implements IClientSocket {
 
         /**
          *
-         */
-        public void leaveGroup() {
-            if (getChannel() != null) {
-                SocketHelper.send(getOuter(), "You can't leave a group if you are in a channel");
-                return;
-            }
-
-            if (getGroup() == null) {
-                SocketHelper.send(getOuter(), "You are not currently in a group");
-                return;
-            }
-
-            SocketHelper.sendTo(getGroup(), getOuter().getPlayer().getName() + " left the group");
-
-            getGroup().kick(getOuter());
-        }
-
-        /**
-         *
-         */
-        public void leaveChannel() {
-            if (getChannel() == null) {
-                SocketHelper.send(getOuter(), "You are not currently in a channel");
-                return;
-            }
-
-            SocketHelper.sendTo(getChannel(), getOuter().getPlayer().getName() + " left the channel");
-
-            getChannel().kick(getOuter());
-        }
-
-        /**
-         *
-         * @param argument
-         * @param entry
-         */
-        public void joinChannel(final String argument, final String entry) {
-            if (!ValidationUtils.isNumeric(argument)) {
-                SocketHelper.send(getOuter(), "You didn't select a valid channel");
-                return;
-            }
-
-            if (getGroup() == null) {
-                SocketHelper.send(getOuter(), "You need to be in a group in order to select a channel");
-                return;
-            }
-
-            if (getChannel() != null) {
-                SocketHelper.send(getOuter(), "You are already in a channel");
-                return;
-            }
-
-            if (getGroup().getChannels().isEmpty()) {
-                SocketHelper.send(getOuter(), "This group has no channels");
-                return;
-            }
-
-            int index = Integer.parseInt(argument);
-
-            if (index < 0) {
-                SocketHelper.send(getOuter(), "The channel you selected is invalid");
-                return;
-            }
-
-            if (index >= getGroup().getChannels().size()) {
-                SocketHelper.send(getOuter(), "The channel you selected is invalid");
-                return;
-            }
-
-            Channel channel = getGroup().getChannels().get(index);
-
-            if (GroupUtils.isBanned(channel.getBlacklist(), getOuter())) {
-                SocketHelper.send(getOuter(), "You are banned from the channel");
-                return;
-            }
-
-            if (channel.hasPassword()) {
-                if (entry.isEmpty()) {
-                    SocketHelper.send(getOuter(), "A password is required to join the channel");
-                    return;
-                }
-
-                if (!entry.equals(channel.getPassword())) {
-                    SocketHelper.send(getOuter(), "Wrong password");
-                    return;
-                }
-
-                getGroup().addClientToChannel(channel, getOuter());
-                SocketHelper.send(getOuter(), "Joined channel " + getChannel().getName());
-                return;
-            }
-
-            getGroup().addClientToChannel(channel, getOuter());
-
-            SocketHelper.sendTo(getChannel(), getOuter().getPlayer().getName() + " joined the channel");
-        }
-
-        /**
-         *
-         */
-        public void disconnect() {
-            getOuter().disconnect();
-        }
-
-        /**
-         *
-         * @param argument
-         * @param entry
-         */
-        public void joinGroup(final String argument, final String entry) {
-            if (!ValidationUtils.isNumeric(argument)) {
-                SocketHelper.send(getOuter(), "You didn't select a valid group");
-                return;
-            }
-
-            if (getGroup() != null) {
-                SocketHelper.send(getOuter(), "You are already in a group");
-                return;
-            }
-
-            if (Server.getInstance().getGroups().isEmpty()) {
-                SocketHelper.send(getOuter(), "No groups are available");
-                return;
-            }
-
-            int index = Integer.parseInt(argument);
-
-            if (index < 0) {
-                SocketHelper.send(getOuter(), "You didn't select a valid group");
-                return;
-            }
-
-            if (index >= Server.getInstance().getGroups().size()) {
-                SocketHelper.send(getOuter(), "You didn't select a valid group");
-                return;
-            }
-
-            Group group = Server.getInstance().getGroups().get(index);
-
-            if (GroupUtils.isBanned(group.getBlacklist(), getOuter())) {
-                SocketHelper.send(getOuter(), "You are banned from the group");
-                return;
-            }
-
-            if (group.hasPassword()) {
-                if (entry.isEmpty()) {
-                    SocketHelper.send(getOuter(), "A password is required to join the group");
-                    return;
-                }
-
-                if (!entry.equals(group.getPassword())) {
-                    SocketHelper.send(getOuter(), "Wrong password");
-                    return;
-                }
-
-                Server.getInstance().addClientToGroup(group, getOuter());
-                SocketHelper.send(getOuter(), "Joined group " + getGroup().getName());
-                return;
-            }
-
-            Server.getInstance().addClientToGroup(group, getOuter());
-
-            SocketHelper.sendTo(getGroup(), getOuter().getPlayer().getName() + " joined the group");
-        }
-
-        /**
-         *
          * @param name
          * @param password
          */
@@ -639,7 +545,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 Server.getInstance().createGroup(getOuter(), name);
             }
 
-            SocketHelper.send(getOuter(), "Created group " + getGroup().getName());
+            SocketHelper.send(getOuter(), "Created group " + group.getName());
         }
 
         /**
@@ -648,7 +554,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param password
          */
         public void createChannel(final String name, final String password) {
-            if (getGroup() == null) {
+            if (group == null) {
                 SocketHelper.send(getOuter(), "You need to be in a group to create a channel");
                 return;
             }
@@ -661,15 +567,172 @@ public class PlayerSocket extends Thread implements IClientSocket {
             Channel channel;
 
             if (!password.isEmpty()) {
-                channel = getGroup().createChannel(getOuter(), name, password);
+                channel = group.createChannel(getOuter(), name, password);
             } else {
-                channel = getGroup().createChannel(getOuter(), name);
+                channel = group.createChannel(getOuter(), name);
             }
 
             if (channel != null) {
                 setChannel(channel);
-                SocketHelper.send(getOuter(), "Created channel " + getChannel().getName());
+                SocketHelper.send(getOuter(), "Created channel " + channel.getName());
             }
+        }
+
+        /**
+         *
+         * @param name
+         * @param password
+         */
+        public void joinGroup(final String name, final String password) {
+            if (name.isEmpty()) {
+                SocketHelper.send(getOuter(), "You didn't select a valid group");
+                return;
+            }
+
+            if (group != null) {
+                SocketHelper.send(getOuter(), "You are already in a group");
+                return;
+            }
+
+            if (Server.getInstance().getGroups().isEmpty()) {
+                SocketHelper.send(getOuter(), "No groups are available");
+                return;
+            }
+
+            int groupIdx = findGroupByName(name);
+
+            if (groupIdx == -1) {
+                SocketHelper.send(getOuter(), "Group not found");
+                return;
+            }
+
+            Group group = Server.getInstance().getGroups().get(groupIdx);
+
+            if (GroupUtils.isBanned(group.getBlacklist(), getOuter())) {
+                SocketHelper.send(getOuter(), "You are banned from the group");
+                return;
+            }
+
+            if (group.hasPassword()) {
+                if (password.isEmpty()) {
+                    SocketHelper.send(getOuter(), "A password is required to join the group");
+                    return;
+                }
+
+                if (!password.equals(group.getPassword())) {
+                    SocketHelper.send(getOuter(), "Wrong password");
+                    return;
+                }
+
+                Server.getInstance().addClientToGroup(group, getOuter());
+                SocketHelper.send(getOuter(), "Joined group " + group.getName());
+                return;
+            }
+
+            Server.getInstance().addClientToGroup(group, getOuter());
+
+            SocketHelper.sendTo(group, getOuter().getPlayer().getName() + " joined the group");
+        }
+
+        /**
+         *
+         * @param name
+         * @param password
+         */
+        public void joinChannel(final String name, final String password) {
+            if (name.isEmpty()) {
+                SocketHelper.send(getOuter(), "You didn't select a valid channel");
+                return;
+            }
+
+            if (group == null) {
+                SocketHelper.send(getOuter(), "You need to be in a group in order to select a channel");
+                return;
+            }
+
+            if (channel != null) {
+                SocketHelper.send(getOuter(), "You are already in a channel");
+                return;
+            }
+
+            if (group.getChannels().isEmpty()) {
+                SocketHelper.send(getOuter(), "This group has no channels");
+                return;
+            }
+
+            int channelIdx = findChannelByName(name);
+
+            if (channelIdx == -1) {
+                SocketHelper.send(getOuter(), "Channel not found");
+                return;
+            }
+
+            Channel channel = group.getChannels().get(channelIdx);
+
+            if (GroupUtils.isBanned(channel.getBlacklist(), getOuter())) {
+                SocketHelper.send(getOuter(), "You are banned from the channel");
+                return;
+            }
+
+            if (channel.hasPassword()) {
+                if (password.isEmpty()) {
+                    SocketHelper.send(getOuter(), "A password is required to join the channel");
+                    return;
+                }
+
+                if (!password.equals(channel.getPassword())) {
+                    SocketHelper.send(getOuter(), "Wrong password");
+                    return;
+                }
+
+                group.addClientToChannel(channel, getOuter());
+                SocketHelper.send(getOuter(), "Joined channel " + channel.getName());
+                return;
+            }
+
+            group.addClientToChannel(channel, getOuter());
+
+            SocketHelper.sendTo(channel, getOuter().getPlayer().getName() + " joined the channel");
+        }
+
+        /**
+         *
+         */
+        public void leaveGroup() {
+            if (channel != null) {
+                SocketHelper.send(getOuter(), "You can't leave a group if you are in a channel");
+                return;
+            }
+
+            if (group == null) {
+                SocketHelper.send(getOuter(), "You are not currently in a group");
+                return;
+            }
+
+            SocketHelper.sendTo(group, getOuter().getPlayer().getName() + " left the group");
+
+            group.kick(getOuter());
+        }
+
+        /**
+         *
+         */
+        public void leaveChannel() {
+            if (channel == null) {
+                SocketHelper.send(getOuter(), "You are not currently in a channel");
+                return;
+            }
+
+            SocketHelper.sendTo(channel, getOuter().getPlayer().getName() + " left the channel");
+
+            channel.kick(getOuter());
+        }
+
+        /**
+         *
+         */
+        public void disconnect() {
+            getOuter().disconnect();
         }
 
         /**
@@ -677,12 +740,12 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param name
          */
         public void setGroupName(String name) {
-            if (getOuter().getGroup() == null) {
+            if (group == null) {
                 SocketHelper.send(getOuter(), "You need to be in a group for that");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getOuter().getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(group.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this group");
                 return;
             }
@@ -692,7 +755,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            getOuter().getGroup().setName(name);
+            group.setName(name);
         }
 
         /**
@@ -700,12 +763,12 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param name
          */
         public void setChannelName(String name) {
-            if (getOuter().getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel for that");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getOuter().getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this channel");
                 return;
             }
@@ -715,7 +778,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            getOuter().getChannel().setName(name);
+            channel.setName(name);
         }
 
         /**
@@ -723,17 +786,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param password
          */
         public void setGroupPassword(String password) {
-            if (getOuter().getGroup() == null) {
+            if (group == null) {
                 SocketHelper.send(getOuter(), "You need to be in a group for that");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getOuter().getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(group.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            getOuter().getGroup().setName(password);
+            group.setName(password);
         }
 
         /**
@@ -741,159 +804,188 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param password
          */
         public void setChannelPassword(String password) {
-            if (getOuter().getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel for that");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getOuter().getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this channel");
                 return;
             }
 
-            getOuter().getChannel().setName(password);
+            channel.setName(password);
         }
 
         /**
          *
-         * @param argument
+         * @param name
          */
-        public void kick(final String argument) {
-            if (!ValidationUtils.isNumeric(argument)) {
-                SocketHelper.send(getOuter(), "You need to select the index of a player");
+        public void kick(final String name) {
+            if (name.isEmpty()) {
+                SocketHelper.send(getOuter(), "You need to select a player");
                 return;
             }
 
-            if (getGroup() == null && getChannel() == null) {
+            if (group == null && this == null) {
                 SocketHelper.send(getOuter(), "You need at least to be in a group to kick a player");
                 return;
             }
 
-            int index = Integer.parseInt(argument);
-
-            if (getChannel() != null) {
-                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (channel != null) {
+                if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                     SocketHelper.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                int playerIdx = findClientByName(channel.getClients(), name);
+
+                if (playerIdx == -1) {
+                    SocketHelper.send(getOuter(), "Player not found");
+                    return;
+                }
+
+                PlayerSocket client = (PlayerSocket) channel.getClients().get(playerIdx);
 
                 if (client.equals(getOuter())) {
                     SocketHelper.send(getOuter(), "You cannot kick yourself");
                     return;
                 }
 
-                getChannel().kick(client);
+                channel.kick(client);
 
                 SocketHelper.send(client, "You have been kicked from the channel");
 
-                SocketHelper.sendTo(getChannel(), client.getPlayer().getName() + " was kicked from the channel");
+                SocketHelper.sendTo(channel, client.getPlayer().getName() + " was kicked from the channel");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(group.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+            int playerIdx = findClientByName(group.getClients(), name);
 
-            getGroup().kick(client);
+            if (playerIdx == -1) {
+                SocketHelper.send(getOuter(), "Player not found");
+                return;
+            }
+
+            PlayerSocket client = (PlayerSocket) group.getClients().get(playerIdx);
+
+            group.kick(client);
 
             SocketHelper.send(client, "You have been kicked from the channel");
 
-            SocketHelper.sendTo(getGroup(), client.getPlayer().getName() + " was kicked from the channel");
+            SocketHelper.sendTo(group, client.getPlayer().getName() + " was kicked from the channel");
         }
 
         /**
          *
-         * @param argument
+         * @param name
          */
-        public void ban(final String argument) {
-            if (!ValidationUtils.isNumeric(argument)) {
-                SocketHelper.send(getOuter(), "You need to select the index of a player");
+        public void ban(final String name) {
+            if (name.isEmpty()) {
+                SocketHelper.send(getOuter(), "You need to select a player");
                 return;
             }
 
-            if (getGroup() == null && getChannel() == null) {
+            if (group == null && channel == null) {
                 SocketHelper.send(getOuter(), "You need at least to be in a group to ban a player");
                 return;
             }
 
-            int index = Integer.parseInt(argument);
-
-            if (getChannel() != null) {
-                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (channel != null) {
+                if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                     SocketHelper.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                int playerIdx = findClientByName(channel.getClients(), name);
+
+                if (playerIdx == -1) {
+                    SocketHelper.send(getOuter(), "Player not found");
+                    return;
+                }
+
+                PlayerSocket client = (PlayerSocket) channel.getClients().get(playerIdx);
 
                 if (client.equals(getOuter())) {
                     SocketHelper.send(getOuter(), "You cannot ban yourself");
                     return;
                 }
 
-                getChannel().ban(client);
+                channel.ban(client);
 
                 SocketHelper.send(client, "You have been banned from the channel");
 
-                SocketHelper.sendTo(getChannel(), client.getPlayer().getName() + " was banned from the channel");
+                SocketHelper.sendTo(channel, client.getPlayer().getName() + " was banned from the channel");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(group.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+            int playerIdx = findClientByName(group.getClients(), name);
 
-            getGroup().ban(client);
+            if (playerIdx == -1) {
+                SocketHelper.send(getOuter(), "Player not found");
+                return;
+            }
+
+            PlayerSocket client = (PlayerSocket) group.getClients().get(playerIdx);
+
+            group.ban(client);
 
             SocketHelper.send(client, "You have been banned from the group");
 
-            SocketHelper.sendTo(getGroup(), client.getPlayer().getName() + " was banned from the group");
+            SocketHelper.sendTo(group, client.getPlayer().getName() + " was banned from the group");
         }
 
         /**
          *
-         * @param argument
+         * @param name
          */
-        public void op(final String argument) {
-            if (!ValidationUtils.isNumeric(argument)) {
+        public void op(final String name) {
+            if (name.isEmpty()) {
                 SocketHelper.send(getOuter(), "Argument is not valid");
                 return;
             }
 
-            if (getGroup() == null && getChannel() == null) {
+            if (group == null && channel == null) {
                 SocketHelper.send(getOuter(), "You need to be at least in a group for that");
                 return;
             }
 
-            int index = Integer.parseInt(argument);
-
-            if (getChannel() != null) {
-                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (channel != null) {
+                if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                     SocketHelper.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                int playerIdx = findClientByName(channel.getClients(), name);
+
+                if (playerIdx == -1) {
+                    SocketHelper.send(getOuter(), "Player not found");
+                    return;
+                }
+
+                PlayerSocket client = (PlayerSocket) channel.getClients().get(playerIdx);
 
                 if (client.equals(getOuter())) {
                     SocketHelper.send(getOuter(), "You cannot make yourself an operator");
                     return;
                 }
 
-                if (GroupUtils.isOperator(getChannel().getOperators(), client)) {
+                if (GroupUtils.isOperator(channel.getOperators(), client)) {
                     SocketHelper.send(getOuter(), client.getPlayer().getName() + " is already an operator");
                     return;
                 }
 
-                getChannel().op(client);
+                channel.op(client);
 
                 SocketHelper.send(getOuter(), client.getPlayer().getName() + " is now an operator");
 
@@ -901,16 +993,23 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(group.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+            int playerIdx = findClientByName(group.getClients(), name);
+
+            if (playerIdx == -1) {
+                SocketHelper.send(getOuter(), "Player not found");
+                return;
+            }
+
+            PlayerSocket client = (PlayerSocket) group.getClients().get(playerIdx);
 
             SocketHelper.send(getOuter(), client.getPlayer().getName() + " is now an operator");
 
-            getGroup().op(client);
+            group.op(client);
 
             SocketHelper.send(getOuter(), client.getPlayer().getName() + " is now an operator");
 
@@ -919,40 +1018,45 @@ public class PlayerSocket extends Thread implements IClientSocket {
 
         /**
          *
-         * @param argument
+         * @param name
          */
-        public void deop(final String argument) {
-            if (!ValidationUtils.isNumeric(argument)) {
+        public void deop(final String name) {
+            if (name.isEmpty()) {
                 SocketHelper.send(getOuter(), "Argument is not valid");
                 return;
             }
 
-            if (getGroup() == null && getChannel() == null) {
+            if (group == null && channel == null) {
                 SocketHelper.send(getOuter(), "You need to be at least in a group for that");
                 return;
             }
 
-            int index = Integer.parseInt(argument);
-
-            if (getChannel() != null) {
-                if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (channel != null) {
+                if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                     SocketHelper.send(getOuter(), "You are not an operator of this channel");
                     return;
                 }
 
-                PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+                int playerIdx = findClientByName(channel.getClients(), name);
+
+                if (playerIdx == -1) {
+                    SocketHelper.send(getOuter(), "Player not found");
+                    return;
+                }
+
+                PlayerSocket client = (PlayerSocket) channel.getClients().get(playerIdx);
 
                 if (client.equals(getOuter())) {
                     SocketHelper.send(getOuter(), "You cannot remove your own operator privileges");
                     return;
                 }
 
-                if (!GroupUtils.isOperator(getChannel().getOperators(), client)) {
+                if (!GroupUtils.isOperator(channel.getOperators(), client)) {
                     SocketHelper.send(getOuter(), client.getPlayer().getName() + " is not an operator");
                     return;
                 }
 
-                getChannel().deop(client);
+                channel.deop(client);
 
                 SocketHelper.send(getOuter(), client.getPlayer().getName() + " is no longer an operator");
 
@@ -960,14 +1064,21 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            if (!GroupUtils.isOperator(getGroup().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(group.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You are not an operator of this group");
                 return;
             }
 
-            PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
+            int playerIdx = findClientByName(group.getClients(), name);
 
-            getGroup().deop(client);
+            if (playerIdx == -1) {
+                SocketHelper.send(getOuter(), "Player not found");
+                return;
+            }
+
+            PlayerSocket client = (PlayerSocket) group.getClients().get(playerIdx);
+
+            group.deop(client);
 
             SocketHelper.send(getOuter(), client.getPlayer().getName() + " is no longer an operator");
 
@@ -977,20 +1088,20 @@ public class PlayerSocket extends Thread implements IClientSocket {
         /**
          *
          */
-        public void list() {
-            if (getGroup() == null && getChannel() == null) {
+        public void listPlayers() {
+            if (group == null && channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a group or a channel for that");
                 return;
             }
 
             final StringBuilder sb = new StringBuilder();
 
-            if (getChannel() != null) {
-                if (getChannel().getClients().isEmpty()) {
+            if (channel != null) {
+                if (channel.getClients().isEmpty()) {
                     return;
                 }
 
-                for (IClientSocket client : getChannel().getClients()) {
+                for (IClientSocket client : channel.getClients()) {
                     PlayerSocket player = (PlayerSocket) client;
                     sb.append(player.getPlayer().getName()).append(", ");
                 }
@@ -1001,11 +1112,11 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            if (getGroup().getClients().isEmpty()) {
+            if (group.getClients().isEmpty()) {
                 return;
             }
 
-            for (IClientSocket client : getGroup().getClients()) {
+            for (IClientSocket client : group.getClients()) {
                 PlayerSocket player = (PlayerSocket) client;
                 sb.append(player.getPlayer().getName()).append(", ");
             }
@@ -1015,6 +1126,58 @@ public class PlayerSocket extends Thread implements IClientSocket {
             SocketHelper.send(getOuter(), sb.toString());
         }
 
+        /**
+         *
+         */
+        public void listGroups() {
+            if (group != null || channel != null) {
+                SocketHelper.send(getOuter(), "You must not be in a group or a channel to do that");
+                return;
+            }
+
+            final StringBuilder sb = new StringBuilder();
+
+            if (Server.getInstance().getGroups().isEmpty()) {
+                return;
+            }
+
+            for (Group group : Server.getInstance().getGroups()) {
+                sb.append(group.getName()).append(", ");
+            }
+
+            sb.delete(sb.length() - 2, sb.length());
+
+            SocketHelper.send(getOuter(), sb.toString());
+        }
+
+        /**
+         *
+         */
+        public void listChannels() {
+            if (group != null) {
+                SocketHelper.send(getOuter(), "You need to be in a group for that");
+                return;
+            }
+
+            final StringBuilder sb = new StringBuilder();
+
+            if (group.getChannels().isEmpty()) {
+                return;
+            }
+
+            for (Channel channel : group.getChannels()) {
+                sb.append(channel.getName()).append(", ");
+            }
+
+            sb.delete(sb.length() - 2, sb.length());
+
+            SocketHelper.send(getOuter(), sb.toString());
+        }
+
+        /**
+         *
+         * @param command
+         */
         public void unknown(final String command) {
             SocketHelper.send(getOuter(), "Unknown command: " + command);
         }
@@ -1046,39 +1209,39 @@ public class PlayerSocket extends Thread implements IClientSocket {
          *
          */
         public void startGame() {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel to start a game");
                 return;
             }
 
-            if (getChannel().getGame() != null) {
+            if (channel.getGame() != null) {
                 SocketHelper.send(getOuter(), "Game has already started");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "You need to be an operator in order to start the game");
                 return;
             }
 
-            getChannel().startGame();
+            channel.startGame();
         }
 
         /**
          *
          */
         public void stopGame() {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel for that");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "Only an operator can stop the game");
                 return;
             }
 
-            getChannel().stopGame();
+            channel.stopGame();
         }
 
         /**
@@ -1086,17 +1249,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param string
          */
         public void setSquares(final String string) {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel to change game settings");
                 return;
             }
 
-            if (getChannel().getGame() != null) {
+            if (channel.getGame() != null) {
                 SocketHelper.send(getOuter(), "Game has already started");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -1118,9 +1281,9 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            getChannel().getSettings().getPreferences().setSquares(squares);
+            channel.getSettings().getPreferences().setSquares(squares);
 
-            SocketHelper.sendTo(getChannel(), "Squares set to " + getChannel().getSettings().getPreferences().getSquares());
+            SocketHelper.sendTo(channel, "Squares set to " + channel.getSettings().getPreferences().getSquares());
         }
 
         /**
@@ -1128,17 +1291,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param string
          */
         public void setBet(final String string) {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel to change game settings");
                 return;
             }
 
-            if (getChannel().getGame() != null) {
+            if (channel.getGame() != null) {
                 SocketHelper.send(getOuter(), "Game has already started");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -1160,9 +1323,9 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            getChannel().getSettings().getPreferences().setBet(bet);
+            channel.getSettings().getPreferences().setBet(bet);
 
-            SocketHelper.sendTo(getChannel(), "Bet set to " + getChannel().getSettings().getPreferences().getBet());
+            SocketHelper.sendTo(channel, "Bet set to " + channel.getSettings().getPreferences().getBet());
         }
 
         /**
@@ -1170,17 +1333,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param string
          */
         public void setMaxTokens(final String string) {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel to change game settings");
                 return;
             }
 
-            if (getChannel().getGame() != null) {
+            if (channel.getGame() != null) {
                 SocketHelper.send(getOuter(), "Game has already started");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -1202,9 +1365,9 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            getChannel().getSettings().getPreferences().setMaxTokens(maxTokens);
+            channel.getSettings().getPreferences().setMaxTokens(maxTokens);
 
-            SocketHelper.sendTo(getChannel(), "Max tokens set to " + getChannel().getSettings().getPreferences().getMaxTokens());
+            SocketHelper.sendTo(channel, "Max tokens set to " + channel.getSettings().getPreferences().getMaxTokens());
         }
 
         /**
@@ -1212,17 +1375,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param string
          */
         public void setBalance(final String string) {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel to change game settings");
                 return;
             }
 
-            if (getChannel().getGame() != null) {
+            if (channel.getGame() != null) {
                 SocketHelper.send(getOuter(), "Game has already started");
                 return;
             }
 
-            if (!GroupUtils.isOperator(getChannel().getOperators(), getOuter())) {
+            if (!GroupUtils.isOperator(channel.getOperators(), getOuter())) {
                 SocketHelper.send(getOuter(), "Only operators can change settings");
                 return;
             }
@@ -1244,9 +1407,9 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 return;
             }
 
-            getChannel().getSettings().getPreferences().setInitBalance(balance);
+            channel.getSettings().getPreferences().setInitBalance(balance);
 
-            SocketHelper.sendTo(getChannel(), "Initial Balance set to " + getChannel().getSettings().getPreferences().getInitBalance());
+            SocketHelper.sendTo(channel, "Initial Balance set to " + channel.getSettings().getPreferences().getInitBalance());
         }
 
         /**
@@ -1254,17 +1417,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
          * @param string
          */
         public void play(final String string) {
-            if (getChannel() == null) {
+            if (channel == null) {
                 SocketHelper.send(getOuter(), "You need to be in a channel in order to play");
                 return;
             }
 
-            if (getChannel().getGame() == null) {
+            if (channel.getGame() == null) {
                 SocketHelper.send(getOuter(), "Game hasn't started");
                 return;
             }
 
-            if (getChannel().getGame().getPlayerlist().getCurrent().getPlayer() != getOuter().getPlayer()) {
+            if (channel.getGame().getPlayerlist().getCurrent().getPlayer() != getOuter().getPlayer()) {
                 SocketHelper.send(getOuter(), "It's not your turn");
                 return;
             }
@@ -1285,7 +1448,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 }
             }
 
-            getChannel().getGame().play(token);
+            channel.getGame().play(token);
         }
 
         /**

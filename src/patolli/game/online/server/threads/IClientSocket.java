@@ -8,6 +8,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
 
@@ -46,6 +47,30 @@ public interface IClientSocket {
      *
      */
     public void disconnect();
+
+    /**
+     *
+     * @param groups
+     * @param name
+     * @return
+     */
+    public int findGroupByName(String name);
+
+    /**
+     *
+     * @param channels
+     * @param name
+     * @return
+     */
+    public int findChannelByName(String name);
+
+    /**
+     *
+     * @param clients
+     * @param name
+     * @return
+     */
+    public int findClientByName(List<IClientSocket> clients, String name);
 
     /**
      *
