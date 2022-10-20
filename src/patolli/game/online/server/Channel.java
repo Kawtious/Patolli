@@ -134,8 +134,6 @@ public class Channel implements IConnection {
                 kick(client);
             }
         }
-
-        group.getChannels().remove(this);
     }
 
     /**
@@ -162,7 +160,7 @@ public class Channel implements IConnection {
         }
 
         if (clients.size() < 1) {
-            destroy();
+            group.removeChannel(this);
         }
     }
 
