@@ -88,9 +88,11 @@ public class Client {
                 write.setDaemon(true);
                 write.start();
 
-                if (args.length > 0) {
-                    for (String arg : args) {
-                        send(arg.getBytes());
+                if (args != null) {
+                    if (args.length > 0) {
+                        for (String arg : args) {
+                            send(arg.getBytes());
+                        }
                     }
                 }
             }
