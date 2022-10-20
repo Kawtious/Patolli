@@ -26,6 +26,15 @@ public final class ValidationUtils {
         return str.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
     }
 
+    /**
+     *
+     * @param input
+     * @return
+     */
+    public static boolean validateCommand(String input) {
+        return input.substring(0, 1).equals("/");
+    }
+
     private ValidationUtils() {
     }
 }

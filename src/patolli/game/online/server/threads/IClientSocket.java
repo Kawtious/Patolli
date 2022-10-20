@@ -51,6 +51,17 @@ public interface IClientSocket {
      *
      * @return
      */
+    public byte[] getKey();
+
+    /**
+     *
+     */
+    public void setKey(byte[] key);
+
+    /**
+     *
+     * @return
+     */
     public Group getGroup();
 
     /**
@@ -88,5 +99,11 @@ public interface IClientSocket {
      * @return
      */
     public DataOutputStream getDos();
+
+    /**
+     *
+     * @param connected
+     */
+    public void setConnected(boolean connected);
 
 }

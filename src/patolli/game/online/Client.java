@@ -7,8 +7,6 @@ package patolli.game.online;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -16,6 +14,8 @@ import patolli.game.online.server.threads.SocketStreams;
 import patolli.utils.Console;
 
 public class Client {
+
+    private byte[] key = "$31$".getBytes();
 
     private DataInputStream dis;
 
@@ -25,9 +25,9 @@ public class Client {
 
     private int port;
 
-    private final String SECRET_KEY = "sT8w69pzFbuK";
-
     private volatile boolean connected = false;
+
+    private String[] args;
 
     private static Client instance;
 
@@ -74,39 +74,37 @@ public class Client {
      */
     private boolean connect(final String ip, final int port) {
         try (final Socket socket = new Socket(ip, port)) {
-            try (final InputStream in = socket.getInputStream()) {
-                try (final OutputStream out = socket.getOutputStream()) {
-                    dis = new DataInputStream(in);
-                    dos = new DataOutputStream(out);
+            dis = new DataInputStream(socket.getInputStream());
+            dos = new DataOutputStream(socket.getOutputStream());
 
-                    receive();
+            receive();
 
-                    if (connected) {
-                        final Thread listen = listen();
-                        listen.setDaemon(true);
-                        listen.start();
+            if (connected) {
+                final Thread listen = listen();
+                listen.setDaemon(true);
+                listen.start();
 
-                        final Thread write = write();
-                        write.setDaemon(true);
-                        write.start();
+                final Thread write = write();
+                write.setDaemon(true);
+                write.start();
+
+                if (args.length > 0) {
+                    for (String arg : args) {
+                        send(arg.getBytes());
                     }
-
-                    while (connected) {
-                    }
-
-                    Console.Error.WriteLine("Client", "Disconnected from server");
-
-                    return true;
                 }
             }
+
+            while (connected) {
+            }
+
+            Console.Error.WriteLine("Client", "Disconnected from server");
+
+            dis.close();
+            dos.close();
+            return true;
         } catch (final IOException ex) {
             Console.Error.WriteLine("Client", "Disconnected: " + ex.getMessage());
-        } finally {
-            try {
-                dis.close();
-                dos.close();
-            } catch (IOException ex) {
-            }
         }
 
         return false;
@@ -117,25 +115,19 @@ public class Client {
      * @throws IOException
      */
     private void receive() throws IOException {
-        byte[] message = SocketStreams.readBytes(dis);
-
         if (!connected) {
-            if (verify(message)) {
-                Console.WriteLine("Client", "Connected to " + ip + ":" + port);
-                connected = true;
-            }
+            setup(SocketStreams.readBytes(dis, key));
+            Console.WriteLine("Client", "Connected to " + ip + ":" + port);
+            connected = true;
         } else {
+            byte[] message = SocketStreams.readBytes(dis, key);
             Console.WriteLine("Client", new String(message));
         }
     }
 
-    private boolean verify(byte[] message) {
-        if (Arrays.equals(message, SECRET_KEY.getBytes())) {
-            send(SECRET_KEY.getBytes());
-            return true;
-        }
-
-        return false;
+    private void setup(byte[] key) {
+        this.key = Arrays.copyOf(key, key.length);
+        send(key);
     }
 
     /**
@@ -175,9 +167,9 @@ public class Client {
      *
      * @param message
      */
-    private void send(final byte[] message) {
+    private void send(byte[] message) {
         try {
-            SocketStreams.sendBytes(dos, message);
+            SocketStreams.sendBytes(dos, message, key);
         } catch (IOException ex) {
         }
     }
@@ -203,6 +195,22 @@ public class Client {
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public String[] getArgs() {
+        return Arrays.copyOf(args, args.length);
+    }
+
+    /**
+     *
+     * @param args
+     */
+    public void setArgs(String[] args) {
+        this.args = Arrays.copyOf(args, args.length);
     }
 
 }

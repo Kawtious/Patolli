@@ -85,7 +85,7 @@ public interface IConnection {
      *
      * @param password
      */
-    public void setPassword(final char[] password);
+    public void setPassword(final String password);
 
     /**
      *

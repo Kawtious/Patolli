@@ -9,6 +9,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import patolli.game.Player;
@@ -17,11 +18,12 @@ import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
 import patolli.game.online.server.GroupUtils;
 import patolli.game.online.server.Server;
-import patolli.utils.Authentication;
 import patolli.utils.Console;
 import patolli.utils.ValidationUtils;
 
 public class PlayerSocket extends Thread implements IClientSocket {
+
+    private byte[] key = "$31$".getBytes();
 
     private final Socket socket;
 
@@ -33,9 +35,11 @@ public class PlayerSocket extends Thread implements IClientSocket {
 
     private Channel channel;
 
-    private volatile boolean connected = true;
+    private volatile boolean connected = false;
 
     private Player player;
+
+    private final Commands commands = new Commands();
 
     /**
      *
@@ -43,11 +47,49 @@ public class PlayerSocket extends Thread implements IClientSocket {
      * @param player
      * @throws IOException
      */
-    public PlayerSocket(final Socket socket, final Player player) throws IOException {
-        this.player = player;
+    public PlayerSocket(Socket socket, Player player) throws IOException {
         this.socket = socket;
+        this.player = player;
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
+    }
+
+    /**
+     *
+     * @param syntaxes
+     * @param index
+     * @return
+     */
+    private String getSyntax(final String[] syntaxes, final int index) {
+        if (index < 0) {
+            return "";
+        }
+
+        if (syntaxes.length == 0) {
+            return "";
+        }
+
+        if (index >= syntaxes.length) {
+            return "";
+        }
+
+        return syntaxes[index];
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Player getPlayer() {
+        return player;
+    }
+
+    /**
+     *
+     * @param player
+     */
+    public void setPlayer(Player player) {
+        this.player = player;
     }
 
     /**
@@ -73,10 +115,12 @@ public class PlayerSocket extends Thread implements IClientSocket {
     @Override
     public byte[] listen() {
         try {
-            byte[] input = SocketStreams.readBytes(dis);
+            byte[] input = SocketStreams.readBytes(dis, key);
 
             if (connected) {
                 execute(input);
+                //Console.WriteLine("PlayerSocket", getPlayer().getName() + ": " + new String(TinkHelper.encryptBytes(input, key), StandardCharsets.US_ASCII));
+                Console.WriteLine("PlayerSocket", getPlayer().getName() + ": " + new String(input));
             }
 
             return input;
@@ -96,7 +140,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
     public void execute(final byte[] msg) throws IOException {
         final String input = new String(msg);
 
-        if (validateCommand(input)) {
+        if (ValidationUtils.validateCommand(input)) {
             executeCommand(input);
         } else {
             if (getChannel() != null) {
@@ -106,42 +150,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 SocketStreams.sendTo(getGroup(), getPlayer().getName() + ": " + input);
             }
         }
-
-        Console.WriteLine("PlayerSocket", getPlayer().getName() + ": " + input);
     }
-
-    /**
-     *
-     * @param input
-     * @return
-     */
-    public boolean validateCommand(final String input) {
-        return input.substring(0, 1).equals("/");
-    }
-
-    /**
-     *
-     * @param syntaxes
-     * @param index
-     * @return
-     */
-    private String getSyntax(final String[] syntaxes, final int index) {
-        if (index < 0) {
-            return "";
-        }
-
-        if (syntaxes.length == 0) {
-            return "";
-        }
-
-        if (index >= syntaxes.length) {
-            return "";
-        }
-
-        return syntaxes[index];
-    }
-
-    private final Commands commands = new Commands();
 
     /**
      *
@@ -176,6 +185,18 @@ public class PlayerSocket extends Thread implements IClientSocket {
             }
             case "/createchannel", "/createroom" -> {
                 commands.createChannel(getSyntax(syntaxes, 1), getSyntax(syntaxes, 2));
+            }
+            case "/setgroupname", "/setlobbyname" -> {
+                commands.setGroupName(getSyntax(syntaxes, 1));
+            }
+            case "/setchannelname", "/setroomname" -> {
+                commands.setChannelName(getSyntax(syntaxes, 1));
+            }
+            case "/setgrouppassword", "/setlobbypassword" -> {
+                commands.setGroupPassword(getSyntax(syntaxes, 1));
+            }
+            case "/setchannelpassword", "/setroompassword" -> {
+                commands.setChannelPassword(getSyntax(syntaxes, 1));
             }
             case "/kick" -> {
                 commands.kick(getSyntax(syntaxes, 1));
@@ -285,6 +306,33 @@ public class PlayerSocket extends Thread implements IClientSocket {
         this.channel = channel;
     }
 
+    /**
+     *
+     * @return
+     */
+    @Override
+    public byte[] getKey() {
+        return key != null ? Arrays.copyOf(key, key.length) : null;
+    }
+
+    /**
+     *
+     * @param key
+     */
+    @Override
+    public void setKey(byte[] key) {
+        this.key = Arrays.copyOf(key, key.length);
+    }
+
+    /**
+     *
+     * @param connected
+     */
+    @Override
+    public void setConnected(boolean connected) {
+        this.connected = connected;
+    }
+
     @Override
     public Socket getSocket() {
         return socket;
@@ -298,22 +346,6 @@ public class PlayerSocket extends Thread implements IClientSocket {
     @Override
     public DataOutputStream getDos() {
         return dos;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Player getPlayer() {
-        return player;
-    }
-
-    /**
-     *
-     * @param player
-     */
-    public void setPlayer(Player player) {
-        this.player = player;
     }
 
     public class Commands {
@@ -361,6 +393,22 @@ public class PlayerSocket extends Thread implements IClientSocket {
             sb.append("/createchannel");
             sb.append(", ");
             sb.append("/createroom");
+            sb.append(", ");
+            sb.append("/setgroupname");
+            sb.append(", ");
+            sb.append("/setlobbyname");
+            sb.append(", ");
+            sb.append("/setchannelname");
+            sb.append(", ");
+            sb.append("/setroomname");
+            sb.append(", ");
+            sb.append("/setgrouppassword");
+            sb.append(", ");
+            sb.append("/setlobbypassword");
+            sb.append(", ");
+            sb.append("/setchannelpassword");
+            sb.append(", ");
+            sb.append("/setroompassword");
             sb.append(", ");
             sb.append("/kick");
             sb.append(", ");
@@ -490,7 +538,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                     return;
                 }
 
-                if (!Authentication.authenticate(entry.toCharArray(), channel.getPassword())) {
+                if (!entry.equals(channel.getPassword())) {
                     SocketStreams.send(getOuter(), "Wrong password");
                     return;
                 }
@@ -558,7 +606,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                     return;
                 }
 
-                if (!Authentication.authenticate(entry.toCharArray(), group.getPassword())) {
+                if (!entry.equals(group.getPassword())) {
                     SocketStreams.send(getOuter(), "Wrong password");
                     return;
                 }
@@ -625,6 +673,88 @@ public class PlayerSocket extends Thread implements IClientSocket {
 
         /**
          *
+         * @param name
+         */
+        public void setGroupName(String name) {
+            if (getOuter().getGroup() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a group for that");
+                return;
+            }
+
+            if (!GroupUtils.isOperator(getOuter().getGroup().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "You are not an operator of this group");
+                return;
+            }
+
+            if (name.isEmpty()) {
+                SocketStreams.send(getOuter(), "A name is required for the group");
+                return;
+            }
+
+            getOuter().getGroup().setName(name);
+        }
+
+        /**
+         *
+         * @param name
+         */
+        public void setChannelName(String name) {
+            if (getOuter().getChannel() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a channel for that");
+                return;
+            }
+
+            if (!GroupUtils.isOperator(getOuter().getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "You are not an operator of this channel");
+                return;
+            }
+
+            if (name.isEmpty()) {
+                SocketStreams.send(getOuter(), "A name is required for the channel");
+                return;
+            }
+
+            getOuter().getChannel().setName(name);
+        }
+
+        /**
+         *
+         * @param password
+         */
+        public void setGroupPassword(String password) {
+            if (getOuter().getGroup() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a group for that");
+                return;
+            }
+
+            if (!GroupUtils.isOperator(getOuter().getGroup().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "You are not an operator of this group");
+                return;
+            }
+
+            getOuter().getGroup().setName(password);
+        }
+
+        /**
+         *
+         * @param password
+         */
+        public void setChannelPassword(String password) {
+            if (getOuter().getChannel() == null) {
+                SocketStreams.send(getOuter(), "You need to be in a channel for that");
+                return;
+            }
+
+            if (!GroupUtils.isOperator(getOuter().getChannel().getOperators(), getOuter())) {
+                SocketStreams.send(getOuter(), "You are not an operator of this channel");
+                return;
+            }
+
+            getOuter().getChannel().setName(password);
+        }
+
+        /**
+         *
          * @param argument
          */
         public void kick(final String argument) {
@@ -647,7 +777,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 }
 
                 PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
-                
+
                 if (client.equals(getOuter())) {
                     SocketStreams.send(getOuter(), "You cannot kick yourself");
                     return;
@@ -699,7 +829,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 }
 
                 PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
-                
+
                 if (client.equals(getOuter())) {
                     SocketStreams.send(getOuter(), "You cannot ban yourself");
                     return;
@@ -751,7 +881,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 }
 
                 PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
-                
+
                 if (client.equals(getOuter())) {
                     SocketStreams.send(getOuter(), "You cannot make yourself an operator");
                     return;
@@ -810,7 +940,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
                 }
 
                 PlayerSocket client = (PlayerSocket) getChannel().getClients().get(index);
-                
+
                 if (client.equals(getOuter())) {
                     SocketStreams.send(getOuter(), "You cannot remove your own operator privileges");
                     return;

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import patolli.game.Player;
 import patolli.game.online.server.threads.IClientSocket;
 import patolli.game.online.server.threads.PlayerSocket;
@@ -19,15 +20,13 @@ import patolli.utils.Console;
 
 public class Server {
 
+    private int port;
+
+    private volatile boolean running = false;
+
     private final List<IClientSocket> connections = Collections.synchronizedList(new ArrayList<>());
 
     private final List<Group> groups = Collections.synchronizedList(new ArrayList<>());
-
-    private int port;
-
-    private final String SECRET_KEY = "sT8w69pzFbuK";
-
-    private volatile boolean running = false;
 
     private static Server instance;
 
@@ -96,7 +95,9 @@ public class Server {
                     Socket socket = server.accept();
                     IClientSocket client = new PlayerSocket(socket, new Player());
 
-                    if (validate(client)) {
+                    byte[] key = UUID.randomUUID().toString().getBytes();
+
+                    if (validate(client, key)) {
                         add(client);
                     }
                 } catch (final IOException ex) {
@@ -108,10 +109,11 @@ public class Server {
     /**
      *
      */
-    private boolean validate(IClientSocket client) throws IOException {
-        SocketStreams.send(client, SECRET_KEY);
+    private boolean validate(IClientSocket client, byte[] key) throws IOException {
+        SocketStreams.send(client, key);
+        client.setKey(key);
 
-        if (Arrays.equals(client.listen(), SECRET_KEY.getBytes())) {
+        if (Arrays.equals(client.listen(), client.getKey())) {
             Console.WriteLine("Server", client.getSocket().getInetAddress() + " has connected");
             return true;
         }
@@ -126,6 +128,7 @@ public class Server {
      */
     private void add(final IClientSocket thread) throws IOException {
         connections.add(thread);
+        thread.setConnected(true);
         thread.start();
     }
 

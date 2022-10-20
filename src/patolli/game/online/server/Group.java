@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import patolli.game.online.server.threads.IClientSocket;
-import patolli.utils.Authentication;
 
 public class Group implements IConnection {
 
@@ -38,7 +37,7 @@ public class Group implements IConnection {
      */
     public Group(final String name, final String password) {
         this.name = name;
-        this.password = Authentication.hash(password.toCharArray());
+        this.password = password;
     }
 
     /**
@@ -237,8 +236,8 @@ public class Group implements IConnection {
      * @param password
      */
     @Override
-    public void setPassword(final char[] password) {
-        this.password = Authentication.hash(password);
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     /**

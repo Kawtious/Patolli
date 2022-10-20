@@ -14,7 +14,6 @@ import patolli.game.configuration.Settings.Preferences;
 import patolli.game.online.server.threads.IClientSocket;
 import patolli.game.online.server.threads.PlayerSocket;
 import patolli.game.online.server.threads.SocketStreams;
-import patolli.utils.Authentication;
 
 public class Channel implements IConnection {
 
@@ -53,7 +52,7 @@ public class Channel implements IConnection {
     public Channel(final Group group, final String name, final String password) {
         this.group = group;
         this.name = name;
-        this.password = Authentication.hash(password.toCharArray());
+        this.password = password;
     }
 
     /**
@@ -254,8 +253,8 @@ public class Channel implements IConnection {
      * @param password
      */
     @Override
-    public void setPassword(final char[] password) {
-        this.password = Authentication.hash(password);
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     /**
