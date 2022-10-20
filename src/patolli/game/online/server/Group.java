@@ -145,7 +145,7 @@ public class Group implements IConnection {
         clients.remove(client);
 
         if (clients.size() < 1) {
-            destroy();
+            Server.getInstance().removeGroup(this);
         }
     }
 
