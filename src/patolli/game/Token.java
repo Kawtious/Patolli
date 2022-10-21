@@ -25,6 +25,10 @@ public class Token {
         position += advance;
     }
 
+    public void markAsDestroyed() {
+        position = -1;
+    }
+
     public void markAsFinished() {
         position = -2;
     }

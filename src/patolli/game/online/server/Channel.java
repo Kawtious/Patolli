@@ -68,8 +68,8 @@ public class Channel implements IConnection {
             players.add((PlayerSocket) clients.get(i));
         }
 
-        for (PlayerSocket client : players) {
-            client.getPlayer().getBalance().set(game.getPreferences().getInitBalance());
+        for (PlayerSocket player : players) {
+            player.getPlayer().getBalance().set(game.getPreferences().getInitBalance());
         }
 
         game.getSettings().add(players);

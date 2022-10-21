@@ -6,8 +6,7 @@ package patolli.game;
 
 import java.util.ArrayList;
 import java.util.List;
-import patolli.game.configuration.Settings;
-import patolli.game.configuration.Settings.Preferences;
+import patolli.game.Settings.Preferences;
 import patolli.game.online.PlayerSocket;
 import patolli.game.online.server.Channel;
 import patolli.game.spaces.CentralSpace;
@@ -60,46 +59,39 @@ public class Game {
     }
 
     public void play(final Token token) {
-        if (!gameHasEnded()) {
-            getCurrentPlayer().getDice().nextOutcome();
-            SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " got " + getCurrentPlayer().getDice().getResult() + " after throwing the dice and can move " + getCurrentPlayer().getDice().getOutcome() + " spaces");
-
-            if (analizeOutcome(token)) {
-                playToken(token);
-            }
-
-            playerlist.nextTurn();
-            SocketHelper.sendTo(channel, "It is now player " + getCurrentPlayer().getName() + "'s turn");
-        } else {
+        if (gameHasEnded()) {
             channel.stopGame();
+            return;
         }
+
+        getCurrentPlayer().getDice().nextOutcome();
+        SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " got " + getCurrentPlayer().getDice().getResult() + " after throwing the dice and can move " + getCurrentPlayer().getDice().getOutcome() + " spaces");
+
+        if (analizeOutcome(token)) {
+            playToken(token);
+        }
+
+        playerlist.nextTurn();
+        SocketHelper.sendTo(channel, "It is now player " + getCurrentPlayer().getName() + "'s turn");
     }
 
-    private boolean analizeOutcome(final Token token) {
-        final int outcome = getCurrentPlayer().getDice().getOutcome();
+    private boolean analizeOutcome(Token token) {
+        int outcome = getCurrentPlayer().getDice().getOutcome();
 
         if (outcome == 0) {
             if (getCurrentPlayer().tokensInPlay() != 0) {
                 SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " is unable to move any tokens");
                 payEveryone(getPreferences().getBet(), playerlist.getCurrent(), playerlist.getPlayers());
-                return false;
+            } else {
+                SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + "'s turn is skipped");
             }
-
-            SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + "'s turn is skipped");
             return false;
         }
 
-        if (getCurrentPlayer().countTokens() < getPreferences().getMaxTokens()) {
-            if (getCurrentPlayer().tokensInPlay() == 0) {
+        if (getCurrentPlayer().tokenCount() < getPreferences().getMaxTokens()) {
+            if (getCurrentPlayer().tokensInPlay() == 0 || (token == null && outcome == 1)) {
                 insertToken();
                 return false;
-            }
-
-            if (outcome == 1) {
-                if (token == null) {
-                    insertToken();
-                    return false;
-                }
             }
         }
 
@@ -113,73 +105,70 @@ public class Game {
             selectedToken = getCurrentPlayer().getCurrentToken();
         } else {
             if (!selectedToken.equals(getCurrentPlayer().getCurrentToken())) {
-                if (getCurrentPlayer().getBalance().get() < getPreferences().getBet()) {
-                    SocketHelper.send(playerlist.getCurrent(), "Your balance is too low to select a token");
-                    selectedToken = getCurrentPlayer().getCurrentToken();
-                } else {
+                if (getCurrentPlayer().getBalance().get() >= getPreferences().getBet() * playerlist.getPlayers().size()) {
                     SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " pays " + getPreferences().getBet() + " to move token " + selectedToken.getIndex() + " at position " + selectedToken.getPosition());
                     payEveryone(getPreferences().getBet(), playerlist.getCurrent(), playerlist.getPlayers());
+                } else {
+                    SocketHelper.send(playerlist.getCurrent(), "Your balance is too low to select a token");
+                    selectedToken = getCurrentPlayer().getCurrentToken();
                 }
             }
         }
 
-        final int nextPos = selectedToken.getPosition() + getCurrentPlayer().getDice().getOutcome();
+        int nextPos = selectedToken.getPosition() + getCurrentPlayer().getDice().getOutcome();
         moveToken(selectedToken, nextPos);
     }
 
-    private void moveToken(final Token token, final int nextPos) {
-        final Space nextSpace = board.getSpace(nextPos);
+    private void moveToken(Token token, int nextPos) {
+        Space nextSpace = board.getSpace(nextPos);
 
         if (board.willTokenFinish(token, nextPos)) {
             SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + token.getOwner() + " has successfully looped around the board");
+
             token.markAsFinished();
-
             everyonePays(settings.getPreferences().getBet(), playerlist.getPlayers(), playerlist.getCurrent());
+            getCurrentPlayer().selectNextToken();
             board.remove(token);
-        } else {
-            if (!board.willCollide(token.getOwner(), nextPos)) {
-                SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space occupied by " + nextSpace.getOwner().getName());
+            return;
+        }
 
-                if (nextSpace instanceof CentralSpace) {
-                    SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " destroys " + nextSpace.getOwner().getName() + "'s tokens at position " + nextPos);
+        if (board.willCollide(token.getOwner(), nextPos)) {
+            SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space occupied by " + nextSpace.getOwner().getName());
 
-                    for (Token token1 : nextSpace.getTokens()) {
-                        token1.setPosition(-1);
-                    }
-
-                    board.move(token, nextPos);
-                } else {
-                    SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " returns to previous position");
+            if (nextSpace instanceof CentralSpace) {
+                SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " destroys " + nextSpace.getOwner().getName() + "'s tokens at position " + nextPos);
+                for (Token token1 : nextSpace.getTokens()) {
+                    token1.markAsDestroyed();
                 }
 
+                board.move(token, nextPos);
+            } else {
+                SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " returns to previous position");
+            }
+
+            getCurrentPlayer().selectNextToken();
+        } else {
+            board.move(token, nextPos);
+            SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space at position " + token.getPosition());
+
+            if (nextSpace instanceof ExteriorSpace) {
+                SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an exterior space");
+                playerlist.prevTurn();
+            } else if (nextSpace instanceof TriangleSpace) {
+                SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an triangle space");
+                payEveryone(getPreferences().getBet() * 2, playerlist.getCurrent(), playerlist.getPlayers());
                 getCurrentPlayer().selectNextToken();
             } else {
-                board.move(token, nextPos);
-
-                SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space at position " + token.getPosition());
-
-                if (token.getPosition() >= 0) {
-                    if (nextSpace instanceof ExteriorSpace) {
-                        SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an exterior space");
-
-                        playerlist.prevTurn();
-                    } else if (nextSpace instanceof TriangleSpace) {
-                        SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an triangle space");
-
-                        payEveryone(getPreferences().getBet() * 2, playerlist.getCurrent(), playerlist.getPlayers());
-                    } else {
-                        getCurrentPlayer().selectNextToken();
-                    }
-                }
+                getCurrentPlayer().selectNextToken();
             }
         }
     }
 
     private void insertToken() {
-        final Token token = getCurrentPlayer().createToken(board.getStartPos(playerlist.getTurn()));
+        Token token = getCurrentPlayer().createToken(board.getStartPos(playerlist.getTurn()));
         board.insert(token, token.getInitialPos());
-        SocketHelper.sendTo(channel, "Inserted token " + token.getIndex() + " in board for player " + getCurrentPlayer().getName() + " at position " + token.getInitialPos());
 
+        SocketHelper.sendTo(channel, "Inserted token " + token.getIndex() + " in board for player " + getCurrentPlayer().getName() + " at position " + token.getInitialPos());
         getCurrentPlayer().selectNextToken();
     }
 
@@ -192,9 +181,8 @@ public class Game {
             return false;
         }
 
-        if (player.getPlayer().countTokens() >= getPreferences().getMaxTokens() && player.getPlayer().tokensInPlay() == 0) {
+        if (player.getPlayer().tokenCount() >= getPreferences().getMaxTokens() && player.getPlayer().tokensInPlay() == 0) {
             SocketHelper.sendTo(channel, "Player " + player.getPlayer().getName() + " has no more tokens to play with!");
-
             playerlist.remove(player);
             return false;
         }
@@ -218,7 +206,6 @@ public class Game {
 
         from.getPlayer().getBalance().take(amount);
         to.getPlayer().getBalance().give(amount);
-
         SocketHelper.sendTo(channel, "Player " + from.getPlayer().getName() + ":  " + from.getPlayer().getBalance() + " | Player " + to.getPlayer().getName() + ": " + to.getPlayer().getBalance());
     }
 

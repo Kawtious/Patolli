@@ -50,7 +50,7 @@ public class Player {
     }
 
     public Token createToken(final int initialPos) {
-        final Token token = new Token(this, countTokens(), initialPos);
+        final Token token = new Token(this, tokenCount(), initialPos);
 
         tokens.add(token);
 
@@ -61,7 +61,7 @@ public class Player {
         return tokens.get(index);
     }
 
-    public int countTokens() {
+    public int tokenCount() {
         return tokens.size();
     }
 
@@ -89,7 +89,7 @@ public class Player {
             return false;
         }
 
-        return countTokens() > 0;
+        return tokenCount() > 0;
     }
 
     public int finishedTokens() {
@@ -115,14 +115,14 @@ public class Player {
         }
 
         if (currentToken == 0) {
-            for (int i = 1; i < countTokens(); i++) {
+            for (int i = 1; i < tokenCount(); i++) {
                 if (tokenIsInPlay(getToken(i))) {
                     currentToken = i;
-                    return;
+                    break;
                 }
             }
         } else {
-            for (int i = currentToken + 1; i < countTokens(); i++) {
+            for (int i = currentToken + 1; i < tokenCount(); i++) {
                 if (tokenIsInPlay(getToken(i))) {
                     currentToken = i;
                     return;

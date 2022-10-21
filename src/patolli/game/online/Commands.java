@@ -1142,7 +1142,7 @@ public class Commands {
                 final int index = Integer.parseInt(string);
 
                 if (index >= 0) {
-                    if (index < player.getPlayer().countTokens()) {
+                    if (index < player.getPlayer().tokenCount()) {
                         if (player.getPlayer().getToken(index).getPosition() >= 0) {
                             token = player.getPlayer().getToken(index);
                         }
