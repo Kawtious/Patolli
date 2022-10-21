@@ -83,7 +83,8 @@ public class Commands {
             "/setsquares",
             "/setbet",
             "/setmaxtokens",
-            "/setbalance"
+            "/setbalance",
+            "/setmaxplayers"
         };
 
         for (String command : settingsCommandList) {
@@ -1113,6 +1114,48 @@ public class Commands {
         player.getChannel().getGame().getPreferences().setInitBalance(balance);
 
         SocketHelper.sendTo(player.getChannel(), "Initial Balance set to " + player.getChannel().getGame().getPreferences().getInitBalance());
+    }
+
+    /**
+     *
+     * @param string
+     */
+    public void setMaxPlayers(final String string) {
+        if (player.getChannel() == null) {
+            SocketHelper.send(player, "You need to be in a channel to change game settings");
+            return;
+        }
+
+        if (player.getChannel().getGame() != null) {
+            SocketHelper.send(player, "Game has already started");
+            return;
+        }
+
+        if (!GroupUtils.isOperator(player.getChannel().getOperators(), player)) {
+            SocketHelper.send(player, "Only operators can change settings");
+            return;
+        }
+
+        if (string.isEmpty()) {
+            SocketHelper.send(player, "You need to set a valid amount of players");
+            return;
+        }
+
+        if (!ValidationUtils.isNumeric(string)) {
+            SocketHelper.send(player, "Argument is not valid");
+            return;
+        }
+
+        final int maxPlayers = Integer.parseInt(string);
+
+        if (maxPlayers < 0) {
+            SocketHelper.send(player, "Max players must not be 0 and must be positive");
+            return;
+        }
+
+        player.getChannel().getGame().getPreferences().setMaxPlayers(maxPlayers);
+
+        SocketHelper.sendTo(player.getChannel(), "Max players set to " + player.getChannel().getGame().getPreferences().getMaxPlayers());
     }
 
     /**

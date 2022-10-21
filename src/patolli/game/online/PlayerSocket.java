@@ -271,12 +271,6 @@ public class PlayerSocket extends Thread implements IClientSocket {
             }
 
             // Settings
-            case "/startgame" -> {
-                commands.startGame();
-            }
-            case "/stopgame" -> {
-                commands.stopGame();
-            }
             case "/setsquares" -> {
                 commands.setSquares(getArgument(arguments, 1));
             }
@@ -289,8 +283,17 @@ public class PlayerSocket extends Thread implements IClientSocket {
             case "/setbalance" -> {
                 commands.setBalance(getArgument(arguments, 1));
             }
+            case "/setmaxplayers" -> {
+                commands.setMaxPlayers(getArgument(arguments, 1));
+            }
 
             // Game
+            case "/startgame" -> {
+                commands.startGame();
+            }
+            case "/stopgame" -> {
+                commands.stopGame();
+            }
             case "/play" -> {
                 commands.play(getArgument(arguments, 1));
             }
