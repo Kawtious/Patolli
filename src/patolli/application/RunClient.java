@@ -10,8 +10,7 @@ public class RunClient {
 
     private static final String SERVER_IP = "localhost";
     private static final int SERVER_PORT = 1001;
-    private static final String[] testArgs1 = {"/setname \"caz amogus\"", "/creategroup \"xd aaa\"", "/createchannel \"xdd  ppp\""};
-    private static final String[] testArgs2 = {"/setname \"testjoin\"", "/joingroup \"xd aaa\"", "/joinchannel \"xdd  ppp\""};
+    private static String[] testArgs = {};
 
     /**
      * @param args the command line arguments
@@ -22,7 +21,7 @@ public class RunClient {
 
         client.setIp(SERVER_IP);
         client.setPort(SERVER_PORT);
-        //client.setArgs(testArgs1);
+        client.setArgs(testArgs);
 
         if (!client.run()) {
             System.exit(1);

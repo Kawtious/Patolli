@@ -13,8 +13,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import patolli.game.Player;
-import patolli.game.online.server.threads.IClientSocket;
-import patolli.game.online.server.threads.PlayerSocket;
+import patolli.game.online.IClientSocket;
+import patolli.game.online.PlayerSocket;
 import patolli.utils.Console;
 import patolli.utils.SocketHelper;
 
@@ -115,6 +115,7 @@ public class Server {
 
         if (Arrays.equals(client.listen(), client.getKey())) {
             Console.WriteLine("Server", client.getSocket().getInetAddress() + " has connected");
+            SocketHelper.send(client, "Type /? or /help for a list of commands");
             return true;
         }
 

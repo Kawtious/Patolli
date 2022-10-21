@@ -6,7 +6,7 @@ package patolli.game;
 
 import java.util.Collections;
 import java.util.List;
-import patolli.game.online.server.threads.PlayerSocket;
+import patolli.game.online.PlayerSocket;
 
 public class Playerlist {
 

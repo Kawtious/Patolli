@@ -9,10 +9,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import patolli.game.Game;
-import patolli.game.configuration.Settings;
-import patolli.game.configuration.Settings.Preferences;
-import patolli.game.online.server.threads.IClientSocket;
-import patolli.game.online.server.threads.PlayerSocket;
+import patolli.game.online.IClientSocket;
+import patolli.game.online.PlayerSocket;
 import patolli.utils.SocketHelper;
 
 public class Channel implements IConnection {
@@ -24,8 +22,6 @@ public class Channel implements IConnection {
     private String password = "";
 
     private final Group group;
-
-    private Settings settings = new Settings(new Preferences());
 
     private Game game;
 
@@ -66,17 +62,17 @@ public class Channel implements IConnection {
 
         List<PlayerSocket> players = new ArrayList<>();
 
-        for (int i = 0; i < settings.getPreferences().getMaxPlayers() && i < clients.size(); i++) {
+        game = new Game(this);
+
+        for (int i = 0; i < game.getPreferences().getMaxPlayers() && i < clients.size(); i++) {
             players.add((PlayerSocket) clients.get(i));
         }
 
         for (PlayerSocket client : players) {
-            client.getPlayer().getBalance().set(settings.getPreferences().getInitBalance());
+            client.getPlayer().getBalance().set(game.getPreferences().getInitBalance());
         }
 
-        settings.add(players);
-
-        game = new Game(this);
+        game.getSettings().add(players);
 
         if (!game.init()) {
             game = null;
@@ -90,7 +86,6 @@ public class Channel implements IConnection {
         }
 
         game = null;
-        settings = new Settings(new Preferences());
         SocketHelper.sendTo(this, "Game has stopped");
     }
 
@@ -100,14 +95,6 @@ public class Channel implements IConnection {
      */
     public Group getGroup() {
         return group;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Settings getSettings() {
-        return settings;
     }
 
     /**

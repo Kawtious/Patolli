@@ -7,7 +7,7 @@ package patolli.game.configuration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import patolli.game.online.server.threads.PlayerSocket;
+import patolli.game.online.PlayerSocket;
 import patolli.utils.Console;
 
 public class Settings {

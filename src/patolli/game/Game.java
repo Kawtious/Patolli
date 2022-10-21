@@ -6,9 +6,10 @@ package patolli.game;
 
 import java.util.ArrayList;
 import java.util.List;
+import patolli.game.configuration.Settings;
 import patolli.game.configuration.Settings.Preferences;
+import patolli.game.online.PlayerSocket;
 import patolli.game.online.server.Channel;
-import patolli.game.online.server.threads.PlayerSocket;
 import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
@@ -18,6 +19,8 @@ import patolli.utils.SocketHelper;
 public class Game {
 
     private final Channel channel;
+
+    private final Settings settings = new Settings(new Preferences());
 
     private Board board;
 
@@ -30,27 +33,27 @@ public class Game {
     }
 
     public boolean init() {
-        if (channel.getSettings().getPlayers().size() < 2) {
+        if (settings.getPlayers().size() < 2) {
             SocketHelper.sendTo(channel, "Not enough players have joined the game");
             return false;
         }
 
-        if (!getGameSettings().validate()) {
+        if (!getPreferences().validate()) {
             SocketHelper.sendTo(channel, "Failed to validate settings");
             return false;
         }
 
         board = new Board();
 
-        if (!board.createBoard(getGameSettings().getSquares())) {
+        if (!board.createBoard(getPreferences().getSquares())) {
             SocketHelper.sendTo(channel, "Failed to create board");
             return false;
         }
 
         SocketHelper.sendTo(channel, "Game is starting");
 
-        playerlist = new Playerlist(new ArrayList<>(channel.getSettings().getPlayers()));
-        leaderboard = new Leaderboard(channel.getSettings().getPlayers());
+        playerlist = new Playerlist(new ArrayList<>(settings.getPlayers()));
+        leaderboard = new Leaderboard(settings.getPlayers());
 
         SocketHelper.sendTo(channel, "Game has started! It is now player " + getCurrentPlayer().getName() + "'s turn");
         return true;
@@ -78,7 +81,7 @@ public class Game {
         if (outcome == 0) {
             if (getCurrentPlayer().tokensInPlay() != 0) {
                 SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " is unable to move any tokens");
-                payEveryone(getGameSettings().getBet(), playerlist.getCurrent(), playerlist.getPlayers());
+                payEveryone(getPreferences().getBet(), playerlist.getCurrent(), playerlist.getPlayers());
                 return false;
             }
 
@@ -86,7 +89,7 @@ public class Game {
             return false;
         }
 
-        if (getCurrentPlayer().countTokens() < getGameSettings().getMaxTokens()) {
+        if (getCurrentPlayer().countTokens() < getPreferences().getMaxTokens()) {
             if (getCurrentPlayer().tokensInPlay() == 0) {
                 insertToken();
                 return false;
@@ -110,12 +113,12 @@ public class Game {
             selectedToken = getCurrentPlayer().getCurrentToken();
         } else {
             if (!selectedToken.equals(getCurrentPlayer().getCurrentToken())) {
-                if (getCurrentPlayer().getBalance().get() < getGameSettings().getBet()) {
+                if (getCurrentPlayer().getBalance().get() < getPreferences().getBet()) {
                     SocketHelper.send(playerlist.getCurrent(), "Your balance is too low to select a token");
                     selectedToken = getCurrentPlayer().getCurrentToken();
                 } else {
-                    SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " pays " + getGameSettings().getBet() + " to move token " + selectedToken.getIndex() + " at position " + selectedToken.getPosition());
-                    payEveryone(getGameSettings().getBet(), playerlist.getCurrent(), playerlist.getPlayers());
+                    SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " pays " + getPreferences().getBet() + " to move token " + selectedToken.getIndex() + " at position " + selectedToken.getPosition());
+                    payEveryone(getPreferences().getBet(), playerlist.getCurrent(), playerlist.getPlayers());
                 }
             }
         }
@@ -131,7 +134,7 @@ public class Game {
             SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + token.getOwner() + " has successfully looped around the board");
             token.markAsFinished();
 
-            everyonePays(channel.getSettings().getPreferences().getBet(), playerlist.getPlayers(), playerlist.getCurrent());
+            everyonePays(settings.getPreferences().getBet(), playerlist.getPlayers(), playerlist.getCurrent());
             board.remove(token);
         } else {
             if (!board.willCollide(token.getOwner(), nextPos)) {
@@ -163,7 +166,7 @@ public class Game {
                     } else if (nextSpace instanceof TriangleSpace) {
                         SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " landed on an triangle space");
 
-                        payEveryone(getGameSettings().getBet() * 2, playerlist.getCurrent(), playerlist.getPlayers());
+                        payEveryone(getPreferences().getBet() * 2, playerlist.getCurrent(), playerlist.getPlayers());
                     } else {
                         getCurrentPlayer().selectNextToken();
                     }
@@ -189,7 +192,7 @@ public class Game {
             return false;
         }
 
-        if (player.getPlayer().countTokens() >= getGameSettings().getMaxTokens() && player.getPlayer().tokensInPlay() == 0) {
+        if (player.getPlayer().countTokens() >= getPreferences().getMaxTokens() && player.getPlayer().tokensInPlay() == 0) {
             SocketHelper.sendTo(channel, "Player " + player.getPlayer().getName() + " has no more tokens to play with!");
 
             playerlist.remove(player);
@@ -253,8 +256,12 @@ public class Game {
         return playerlist.getCurrent().getPlayer();
     }
 
-    private Preferences getGameSettings() {
-        return channel.getSettings().getPreferences();
+    public Settings getSettings() {
+        return settings;
+    }
+
+    public Preferences getPreferences() {
+        return settings.getPreferences();
     }
 
     public Channel getChannel() {

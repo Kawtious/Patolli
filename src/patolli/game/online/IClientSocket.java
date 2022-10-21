@@ -2,13 +2,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game.online.server.threads;
+package patolli.game.online;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
 
@@ -50,27 +49,21 @@ public interface IClientSocket {
 
     /**
      *
-     * @param groups
-     * @param name
      * @return
      */
-    public int findGroupByName(String name);
+    public Socket getSocket();
 
     /**
      *
-     * @param channels
-     * @param name
      * @return
      */
-    public int findChannelByName(String name);
+    public DataInputStream getDis();
 
     /**
      *
-     * @param clients
-     * @param name
      * @return
      */
-    public int findClientByName(List<IClientSocket> clients, String name);
+    public DataOutputStream getDos();
 
     /**
      *
@@ -106,24 +99,6 @@ public interface IClientSocket {
      * @param channel
      */
     public void setChannel(final Channel channel);
-
-    /**
-     *
-     * @return
-     */
-    public Socket getSocket();
-
-    /**
-     *
-     * @return
-     */
-    public DataInputStream getDis();
-
-    /**
-     *
-     * @return
-     */
-    public DataOutputStream getDos();
 
     /**
      *

@@ -12,9 +12,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import patolli.game.online.IClientSocket;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
-import patolli.game.online.server.threads.IClientSocket;
 
 public final class SocketHelper {
 

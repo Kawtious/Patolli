@@ -6,7 +6,7 @@ package patolli.game.online.server;
 
 import java.util.List;
 import java.util.UUID;
-import patolli.game.online.server.threads.IClientSocket;
+import patolli.game.online.IClientSocket;
 
 public interface IConnection {
 
