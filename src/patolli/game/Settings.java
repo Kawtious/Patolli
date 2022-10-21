@@ -79,7 +79,7 @@ public class Settings {
             this.squares = squares;
             this.bet = bet;
             this.maxTokens = maxTokens;
-            this.initBalance = DEFAULT_INITBALANCE;
+            this.initBalance = initBalance;
         }
 
         public boolean validate() {
