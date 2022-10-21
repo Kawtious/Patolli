@@ -83,6 +83,16 @@ public class Settings {
         }
 
         public boolean validate() {
+            if (maxPlayers < 2) {
+                Console.WriteLine("Settings", "Not enough players");
+                return false;
+            }
+
+            if (maxPlayers > 4) {
+                Console.WriteLine("Settings", "Too many players");
+                return false;
+            }
+
             if (bet < 5) {
                 Console.WriteLine("Settings", "Bet has to be greater than 5 in order to play");
                 return false;
