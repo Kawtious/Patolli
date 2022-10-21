@@ -2,9 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package patolli.game.tokens;
-
-import patolli.game.Player;
+package patolli.game;
 
 public class Token {
 
@@ -14,21 +12,21 @@ public class Token {
 
     private final int initialPos;
 
-    private int currentPos;
+    private int position;
 
-    public Token(final Player owner, final int index, final int initialPos) {
+    public Token(final Player owner, final int index, final int position) {
         this.owner = owner;
         this.index = index < 0 ? 0 : index;
-        this.initialPos = initialPos;
-        this.currentPos = initialPos;
+        this.initialPos = position;
+        this.position = position;
     }
 
     public void advancePos(final int advance) {
-        currentPos += advance;
+        position += advance;
     }
 
     public void markAsFinished() {
-        currentPos = -2;
+        position = -2;
     }
 
     public Player getOwner() {
@@ -43,12 +41,12 @@ public class Token {
         return initialPos;
     }
 
-    public int getCurrentPos() {
-        return currentPos;
+    public int getPosition() {
+        return position;
     }
 
-    public void setCurrentPos(final int currentPos) {
-        this.currentPos = currentPos;
+    public void setPosition(final int position) {
+        this.position = position;
     }
 
 }

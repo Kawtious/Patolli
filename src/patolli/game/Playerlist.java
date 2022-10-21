@@ -4,89 +4,66 @@
  */
 package patolli.game;
 
-import java.util.ArrayList;
-import utilities.console.Console;
+import java.util.Collections;
+import java.util.List;
+import patolli.game.online.PlayerSocket;
 
 public class Playerlist {
 
-    private Game game;
-
-    private final ArrayList<Player> players = new ArrayList<>();
+    private final List<PlayerSocket> players;
 
     private int turn = 0;
 
-    public Playerlist(final Game game, final ArrayList<Player> players) {
-        this.game = game;
-        this.players.addAll(players);
+    public Playerlist(final List<PlayerSocket> players) {
+        this.players = players;
     }
 
-    public void add(final ArrayList<Player> players) {
-        this.players.addAll(players);
-    }
-
-    public void remove(final Player player) {
-        Console.WriteLine("Playerlist", "Removing player " + player + " from game");
-        game.getBoard().removeTokensOf(player);
-        players.remove(player);
-    }
-
-    public void update() {
-        for (Player player : players) {
-            if (player.getBalance().isBroke()) {
-                remove(player);
-            }
+    public void remove(final PlayerSocket player) {
+        if (player.getPlayer().getBalance().isBroke()) {
+            player.getPlayer().clearTokens();
         }
+
+        if (player.equals(getCurrent())) {
+            nextTurn();
+        }
+
+        players.remove(player);
+        System.out.println(players.size());
     }
 
-    public Player getCurrent() {
+    public PlayerSocket getCurrent() {
         return players.get(turn);
     }
 
-    public Player get(final int index) {
-        return players.get(index);
-    }
-
-    public int getTurnOf(final Player player) {
-        for (int i = 0; i < players.size(); i++) {
-            if (players.get(i).equals(player)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    public Player getNext() {
+    public PlayerSocket getNext() {
         int index = turn + 1;
 
         if (index >= players.size()) {
             index = 0;
         }
 
-        return get(index);
+        return players.get(index);
     }
 
-    public Player getPrev() {
+    public PlayerSocket getPrev() {
         int index = turn - 1;
 
         if (index < 0) {
             index = players.size() - 1;
         }
 
-        return get(index);
+        return players.get(index);
     }
 
-    public void next() {
+    public void nextTurn() {
         turn++;
 
         if (turn >= players.size()) {
             turn = 0;
         }
-
-        Console.WriteLine("Playerlist", "It is now player " + getCurrent() + "'s turn");
     }
 
-    public void previous() {
+    public void prevTurn() {
         turn--;
 
         if (turn < 0) {
@@ -94,16 +71,12 @@ public class Playerlist {
         }
     }
 
-    public Game getGame() {
-        return game;
-    }
-
     public int getTurn() {
         return turn;
     }
 
-    public ArrayList<Player> getPlayers() {
-        return players;
+    public List<PlayerSocket> getPlayers() {
+        return Collections.unmodifiableList(players);
     }
 
 }
