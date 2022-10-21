@@ -83,28 +83,6 @@ public class PlayerSocket extends Thread implements IClientSocket {
 
     /**
      *
-     * @param arguments
-     * @param index
-     * @return
-     */
-    private String getArgument(final List<String> arguments, final int index) {
-        if (index < 0) {
-            return "";
-        }
-
-        if (arguments.isEmpty()) {
-            return "";
-        }
-
-        if (index >= arguments.size()) {
-            return "";
-        }
-
-        return arguments.get(index);
-    }
-
-    /**
-     *
      * @return
      */
     public Player getPlayer() {
@@ -168,7 +146,7 @@ public class PlayerSocket extends Thread implements IClientSocket {
         final String input = new String(msg);
 
         if (ValidationUtils.validateCommand(input)) {
-            executeCommand(input);
+            executeCommand(getArguments(input));
         } else {
             if (channel != null) {
                 SocketHelper.sendTo(channel, getPlayer().getName() + ": " + input);
@@ -181,18 +159,43 @@ public class PlayerSocket extends Thread implements IClientSocket {
 
     /**
      *
-     * @param message
+     * @param str
+     * @return
      */
     @Override
-    public void executeCommand(final String message) {
+    public List<String> getArguments(String str) {
         List<String> arguments = new ArrayList<>();
 
-        Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(message);
+        Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(str);
         while (m.find()) {
             arguments.add(m.group(1).replace("\"", ""));
         }
 
-        final String execute = getArgument(arguments, 0);
+        return arguments;
+    }
+
+    /**
+     *
+     * @param arguments
+     * @param index
+     * @return
+     */
+    @Override
+    public String getArgument(List<String> arguments, int index) {
+        if (index < 0 || arguments.isEmpty() || index >= arguments.size()) {
+            return "";
+        }
+
+        return arguments.get(index);
+    }
+
+    /**
+     *
+     * @param message
+     */
+    @Override
+    public void executeCommand(List<String> arguments) {
+        String execute = getArgument(arguments, 0);
 
         switch (execute) {
             case "/help", "/?" -> {

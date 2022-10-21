@@ -8,6 +8,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 import patolli.game.online.server.Channel;
 import patolli.game.online.server.Group;
 
@@ -40,7 +41,22 @@ public interface IClientSocket {
      *
      * @param message
      */
-    public void executeCommand(final String message);
+    public void executeCommand(List<String> arguments);
+
+    /**
+     *
+     * @param input
+     * @return
+     */
+    public List<String> getArguments(String input);
+
+    /**
+     *
+     * @param arguments
+     * @param index
+     * @return
+     */
+    public String getArgument(List<String> arguments, int index);
 
     /**
      *
