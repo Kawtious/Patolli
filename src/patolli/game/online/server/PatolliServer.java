@@ -6,7 +6,6 @@ package patolli.game.online.server;
 
 import dradacorus.online.client.IDragonSocket;
 import dradacorus.online.server.DragonServer;
-import dradacorus.online.server.layers.ILayer;
 import java.io.IOException;
 import java.net.Socket;
 import patolli.game.online.client.PlayerSocket;
@@ -19,29 +18,8 @@ public class PatolliServer extends DragonServer {
     }
 
     @Override
-    public ILayer createLayer(IDragonSocket client, String name) {
-        ILayer layer = new GameLayer(this, name);
-        addLayer(layer);
-
-        client.setLayer(layer);
-
-        layer.addClient(client);
-        layer.op(client);
-
-        return layer;
-    }
-
-    @Override
-    public ILayer createLayer(IDragonSocket client, String name, String password) {
-        ILayer layer = new GameLayer(this, name, password);
-        addLayer(layer);
-
-        client.setLayer(layer);
-
-        layer.addClient(client);
-        layer.op(client);
-
-        return layer;
+    public void createLayer(IDragonSocket client, String name, String password) {
+        addLayer(new GameLayer(this, name, password), client);
     }
 
 }
