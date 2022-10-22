@@ -4,15 +4,15 @@
  */
 package patolli.game.online.client;
 
-import dradacorus.online.client.DragonSocket;
-import dradacorus.online.server.IDragonServer;
+import dradacorus.online.dragon.IDragonServer;
+import dradacorus.online.kobold.KoboldSocket;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import patolli.game.Player;
 import patolli.game.online.server.GameLayer;
 
-public class PlayerSocket extends DragonSocket {
+public class PlayerSocket extends KoboldSocket {
 
     private Player player;
 
@@ -83,13 +83,13 @@ public class PlayerSocket extends DragonSocket {
     }
 
     @Override
-    public String getClientName() {
+    public String getKoboldName() {
         return player.getName();
     }
 
     @Override
-    public GameLayer getLayer() {
-        return (GameLayer) super.getLayer();
+    public GameLayer getLair() {
+        return (GameLayer) super.getLair();
     }
 
 }

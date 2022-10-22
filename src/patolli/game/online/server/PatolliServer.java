@@ -4,8 +4,8 @@
  */
 package patolli.game.online.server;
 
-import dradacorus.online.client.IDragonSocket;
-import dradacorus.online.server.DragonServer;
+import dradacorus.online.dragon.DragonServer;
+import dradacorus.online.kobold.IKoboldSocket;
 import java.io.IOException;
 import java.net.Socket;
 import patolli.game.online.client.PlayerSocket;
@@ -13,13 +13,13 @@ import patolli.game.online.client.PlayerSocket;
 public class PatolliServer extends DragonServer {
 
     @Override
-    public IDragonSocket createDragonSocket(Socket socket) throws IOException {
+    public IKoboldSocket createKoboldSocket(Socket socket) throws IOException {
         return new PlayerSocket(this, socket);
     }
 
     @Override
-    public void createLayer(IDragonSocket client, String name, String password) {
-        addLayer(new GameLayer(this, name, password), client);
+    public void createLair(IKoboldSocket client, String name, String password) {
+        addLair(new GameLayer(this, name, password), client);
     }
 
 }

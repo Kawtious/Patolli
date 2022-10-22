@@ -4,9 +4,9 @@
  */
 package patolli.game.online.server;
 
-import dradacorus.online.client.IDragonSocket;
-import dradacorus.online.server.IDragonServer;
-import dradacorus.online.server.layers.Layer;
+import dradacorus.online.dragon.IDragonServer;
+import dradacorus.online.kobold.IKoboldSocket;
+import dradacorus.online.server.lairs.Lair;
 import dradacorus.online.utils.SocketHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ import patolli.game.Game;
 import patolli.game.InvalidSettingsException;
 import patolli.game.online.client.PlayerSocket;
 
-public class GameLayer extends Layer {
+public class GameLayer extends Lair {
 
     private Game game;
 
@@ -36,8 +36,8 @@ public class GameLayer extends Layer {
 
         game = new Game(this);
 
-        for (int i = 0; i < game.getPreferences().getMaxPlayers() && i < getClients().size(); i++) {
-            players.add((PlayerSocket) getClients().get(i));
+        for (int i = 0; i < game.getPreferences().getMaxPlayers() && i < getKobolds().size(); i++) {
+            players.add((PlayerSocket) getKobolds().get(i));
         }
 
         for (PlayerSocket player : players) {
@@ -73,7 +73,7 @@ public class GameLayer extends Layer {
     }
 
     @Override
-    public void kick(IDragonSocket client) {
+    public void kick(IKoboldSocket client) {
         if (game != null) {
             game.getPlayerlist().remove((PlayerSocket) client);
         }

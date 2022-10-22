@@ -4,7 +4,7 @@
  */
 package patolli.application;
 
-import dradacorus.online.client.DragonClient;
+import dradacorus.online.kobold.KoboldClient;
 
 public class PatolliRunClient {
 
@@ -17,7 +17,7 @@ public class PatolliRunClient {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        DragonClient client = new DragonClient();
+        KoboldClient client = new KoboldClient();
 
         client.setIp(SERVER_IP);
         client.setPort(SERVER_PORT);
