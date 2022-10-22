@@ -35,60 +35,9 @@ public class PlayerSocket extends DragonSocket {
     @Override
     public void executeCommand(List<String> arguments) {
         String execute = getArgument(arguments, 0);
+        boolean modCommandExecuted = true;
 
         switch (execute) {
-            case "/help", "/?" -> {
-                commands.help();
-            }
-            case "/setname", "/nickname", "/name" -> {
-                commands.setClientName(getArgument(arguments, 1));
-            }
-            case "/createlayer" -> {
-                commands.createLayer(getArgument(arguments, 1), getArgument(arguments, 2));
-            }
-            case "/joinlayer" -> {
-                commands.joinLayer(getArgument(arguments, 1), getArgument(arguments, 2));
-            }
-            case "/leavelayer" -> {
-                commands.leaveLayer();
-            }
-            case "/invite" -> {
-                commands.invite(getArgument(arguments, 1), getArgument(arguments, 2));
-            }
-            case "/accept" -> {
-                commands.accept(getArgument(arguments, 1));
-            }
-            case "/decline" -> {
-                commands.decline(getArgument(arguments, 1));
-            }
-            case "/disconnect" -> {
-                commands.disconnect();
-            }
-            case "/setlayername" -> {
-                commands.setLayerName(getArgument(arguments, 1));
-            }
-            case "/setlayerpassword" -> {
-                commands.setLayerPassword(getArgument(arguments, 1));
-            }
-            case "/kick" -> {
-                commands.kick(getArgument(arguments, 1));
-            }
-            case "/ban" -> {
-                commands.ban(getArgument(arguments, 1));
-            }
-            case "/op" -> {
-                commands.op(getArgument(arguments, 1));
-            }
-            case "/deop" -> {
-                commands.deop(getArgument(arguments, 1));
-            }
-            case "/listclients" -> {
-                commands.listClients();
-            }
-            case "/listlayers" -> {
-                commands.listLayers();
-            }
-
             // Player
             case "/setcolor" -> {
                 commands.setColor(getArgument(arguments, 1));
@@ -122,10 +71,14 @@ public class PlayerSocket extends DragonSocket {
                 commands.play(getArgument(arguments, 1));
             }
 
-            // Unknown
+            //none of the mod commands were executed
             default -> {
-                commands.unknown(getArgument(arguments, 0));
+                modCommandExecuted = false;
             }
+        }
+
+        if (!modCommandExecuted) {
+            super.executeCommand(arguments);
         }
     }
 
