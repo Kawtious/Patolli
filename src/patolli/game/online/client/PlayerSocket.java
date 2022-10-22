@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import patolli.game.Player;
-import patolli.game.online.server.GameLayer;
+import patolli.game.online.server.GameLair;
 
 public class PlayerSocket extends KoboldSocket {
 
@@ -18,10 +18,10 @@ public class PlayerSocket extends KoboldSocket {
 
     private final PatolliCommands commands;
 
-    public PlayerSocket(IDragonServer server, Socket socket) throws IOException {
-        super(server, socket);
+    public PlayerSocket(IDragonServer dragon, Socket socket) throws IOException {
+        super(dragon, socket);
         this.player = new Player();
-        this.commands = new PatolliCommands(server, this);
+        this.commands = new PatolliCommands(dragon, this);
     }
 
     public Player getPlayer() {
@@ -88,8 +88,8 @@ public class PlayerSocket extends KoboldSocket {
     }
 
     @Override
-    public GameLayer getLair() {
-        return (GameLayer) super.getLair();
+    public GameLair getLair() {
+        return (GameLair) super.getLair();
     }
 
 }

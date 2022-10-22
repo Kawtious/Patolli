@@ -14,21 +14,21 @@ import patolli.game.Game;
 import patolli.game.InvalidSettingsException;
 import patolli.game.online.client.PlayerSocket;
 
-public class GameLayer extends Lair {
+public class GameLair extends Lair {
 
     private Game game;
 
-    public GameLayer(IDragonServer server, String name) {
-        super(server, name);
+    public GameLair(IDragonServer dragon, String name) {
+        super(dragon, name);
     }
 
-    public GameLayer(IDragonServer server, String name, String password) {
-        super(server, name, password);
+    public GameLair(IDragonServer dragon, String name, String password) {
+        super(dragon, name, password);
     }
 
     public void startGame() {
         if (game != null) {
-            SocketHelper.Output.sendTo(this, "A game is already running in this channel");
+            SocketHelper.Output.sendTo(this, "A game is already running in this lair");
             return;
         }
 

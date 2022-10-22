@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import patolli.game.Settings.Preferences;
 import patolli.game.online.client.PlayerSocket;
-import patolli.game.online.server.GameLayer;
+import patolli.game.online.server.GameLair;
 import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
@@ -17,7 +17,7 @@ import patolli.game.spaces.TriangleSpace;
 
 public class Game {
 
-    private final GameLayer gameLayer;
+    private final GameLair gameLayer;
 
     private final Settings settings = new Settings(new Preferences());
 
@@ -27,7 +27,7 @@ public class Game {
 
     private Playerlist playerlist;
 
-    public Game(final GameLayer gameLayer) {
+    public Game(final GameLair gameLayer) {
         this.gameLayer = gameLayer;
     }
 
@@ -246,7 +246,7 @@ public class Game {
         return settings.getPreferences();
     }
 
-    public GameLayer getGameLayer() {
+    public GameLair getGameLayer() {
         return gameLayer;
     }
 

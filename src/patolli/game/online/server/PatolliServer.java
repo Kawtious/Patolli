@@ -18,8 +18,8 @@ public class PatolliServer extends DragonServer {
     }
 
     @Override
-    public void createLair(IKoboldSocket client, String name, String password) {
-        addLair(new GameLayer(this, name, password), client);
+    public void createLair(IKoboldSocket kobold, String name, String password) {
+        addLair(new GameLair(this, name, password), kobold);
     }
 
 }
