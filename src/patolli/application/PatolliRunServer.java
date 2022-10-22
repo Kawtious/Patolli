@@ -4,26 +4,24 @@
  */
 package patolli.application;
 
-import dradacorus.online.client.DragonClient;
+import patolli.game.online.server.PatolliServer;
 
-public class RunClient {
+public class PatolliRunServer {
 
-    private static final String SERVER_IP = "localhost";
-    private static final int SERVER_PORT = 1001;
-    private static String[] testArgs = {};
+    private static final int PORT = 1001;
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        DragonClient client = new DragonClient();
+        PatolliServer server = new PatolliServer();
 
-        client.setIp(SERVER_IP);
-        client.setPort(SERVER_PORT);
-        client.setArgs(testArgs);
+        server.setPort(PORT);
+        server.setName("server");
+        server.setPassword("");
 
-        if (!client.run()) {
+        if (!server.start()) {
             System.exit(1);
         }
     }
