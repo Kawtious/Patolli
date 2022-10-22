@@ -88,11 +88,6 @@ public class PlayerSocket extends DragonSocket {
     }
 
     @Override
-    public void setClientName(String name) {
-        player.setName(name);
-    }
-
-    @Override
     public GameLayer getLayer() {
         return (GameLayer) super.getLayer();
     }
