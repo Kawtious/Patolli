@@ -28,7 +28,7 @@ public class GameLayer extends Lair {
 
     public void startGame() {
         if (game != null) {
-            SocketHelper.sendTo(this, "A game is already running in this channel");
+            SocketHelper.Output.sendTo(this, "A game is already running in this channel");
             return;
         }
 
@@ -49,7 +49,7 @@ public class GameLayer extends Lair {
         try {
             game.getPreferences().validate();
         } catch (InvalidSettingsException ex) {
-            SocketHelper.sendTo(this, ex.getMessage());
+            SocketHelper.Output.sendTo(this, ex.getMessage());
             return;
         }
 
@@ -60,12 +60,12 @@ public class GameLayer extends Lair {
 
     public void stopGame() {
         if (game == null) {
-            SocketHelper.sendTo(this, "No game is running");
+            SocketHelper.Output.sendTo(this, "No game is running");
             return;
         }
 
         game = null;
-        SocketHelper.sendTo(this, "Game has stopped");
+        SocketHelper.Output.sendTo(this, "Game has stopped");
     }
 
     public Game getGame() {

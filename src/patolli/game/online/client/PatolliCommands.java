@@ -22,7 +22,7 @@ public class PatolliCommands extends Commands {
     @Override
     public void help() {
         super.help();
-        SocketHelper.send(getKobold(), listExtraCommands());
+        SocketHelper.Output.send(getKobold(), listExtraCommands());
     }
 
     public String listExtraCommands() {
@@ -78,27 +78,27 @@ public class PatolliCommands extends Commands {
 
     public void setColor(String rgb) {
         if (!isValidHexaCode(rgb)) {
-            SocketHelper.send(getKobold(), "You need to specify a color with the hex format #XXXXXX");
+            SocketHelper.Output.send(getKobold(), "You need to specify a color with the hex format #XXXXXX");
             return;
         }
 
         getKobold().getPlayer().setColor(Color.decode(rgb));
-        SocketHelper.send(getKobold(), "Color set to " + Integer.toHexString(getKobold().getPlayer().getColor().getRGB()));
+        SocketHelper.Output.send(getKobold(), "Color set to " + Integer.toHexString(getKobold().getPlayer().getColor().getRGB()));
     }
 
     public void startGame() {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel to start a game");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel to start a game");
             return;
         }
 
         if (getKobold().getLair().getGame() != null) {
-            SocketHelper.send(getKobold(), "Game has already started");
+            SocketHelper.Output.send(getKobold(), "Game has already started");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "You need to be an operator in order to start the game");
+            SocketHelper.Output.send(getKobold(), "You need to be an operator in order to start the game");
             return;
         }
 
@@ -107,12 +107,12 @@ public class PatolliCommands extends Commands {
 
     public void stopGame() {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel for that");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel for that");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "Only an operator can stop the game");
+            SocketHelper.Output.send(getKobold(), "Only an operator can stop the game");
             return;
         }
 
@@ -121,207 +121,207 @@ public class PatolliCommands extends Commands {
 
     public void setSquares(String string) {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel to change game settings");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel to change game settings");
             return;
         }
 
         if (getKobold().getLair().getGame() != null) {
-            SocketHelper.send(getKobold(), "Game has already started");
+            SocketHelper.Output.send(getKobold(), "Game has already started");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "Only operators can change settings");
+            SocketHelper.Output.send(getKobold(), "Only operators can change settings");
             return;
         }
 
         if (string.isEmpty()) {
-            SocketHelper.send(getKobold(), "You need to specify the number of squares for the board");
+            SocketHelper.Output.send(getKobold(), "You need to specify the number of squares for the board");
             return;
         }
 
         if (!ValidationUtils.isNumeric(string)) {
-            SocketHelper.send(getKobold(), "Argument is not valid");
+            SocketHelper.Output.send(getKobold(), "Argument is not valid");
             return;
         }
 
         int squares = Integer.parseInt(string);
 
         if (squares <= 0) {
-            SocketHelper.send(getKobold(), "Number of squares must not be 0 and must be positive");
+            SocketHelper.Output.send(getKobold(), "Number of squares must not be 0 and must be positive");
             return;
         }
 
         getKobold().getLair().getGame().getPreferences().setSquares(squares);
 
-        SocketHelper.sendTo(getKobold().getLair(), "Squares set to " + getKobold().getLair().getGame().getPreferences().getSquares());
+        SocketHelper.Output.sendTo(getKobold().getLair(), "Squares set to " + getKobold().getLair().getGame().getPreferences().getSquares());
     }
 
     public void setBet(String string) {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel to change game settings");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel to change game settings");
             return;
         }
 
         if (getKobold().getLair().getGame() != null) {
-            SocketHelper.send(getKobold(), "Game has already started");
+            SocketHelper.Output.send(getKobold(), "Game has already started");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "Only operators can change settings");
+            SocketHelper.Output.send(getKobold(), "Only operators can change settings");
             return;
         }
 
         if (string.isEmpty()) {
-            SocketHelper.send(getKobold(), "You need to set a valid bet");
+            SocketHelper.Output.send(getKobold(), "You need to set a valid bet");
             return;
         }
 
         if (!ValidationUtils.isNumeric(string)) {
-            SocketHelper.send(getKobold(), "Argument is not valid");
+            SocketHelper.Output.send(getKobold(), "Argument is not valid");
             return;
         }
 
         final int bet = Integer.parseInt(string);
 
         if (bet < 0) {
-            SocketHelper.send(getKobold(), "Bet must not be 0 and must be positive");
+            SocketHelper.Output.send(getKobold(), "Bet must not be 0 and must be positive");
             return;
         }
 
         getKobold().getLair().getGame().getPreferences().setBet(bet);
 
-        SocketHelper.sendTo(getKobold().getLair(), "Bet set to " + getKobold().getLair().getGame().getPreferences().getBet());
+        SocketHelper.Output.sendTo(getKobold().getLair(), "Bet set to " + getKobold().getLair().getGame().getPreferences().getBet());
     }
 
     public void setMaxTokens(String string) {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel to change game settings");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel to change game settings");
             return;
         }
 
         if (getKobold().getLair().getGame() != null) {
-            SocketHelper.send(getKobold(), "Game has already started");
+            SocketHelper.Output.send(getKobold(), "Game has already started");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "Only operators can change settings");
+            SocketHelper.Output.send(getKobold(), "Only operators can change settings");
             return;
         }
 
         if (string.isEmpty()) {
-            SocketHelper.send(getKobold(), "You need to set a valid amount of tokens");
+            SocketHelper.Output.send(getKobold(), "You need to set a valid amount of tokens");
             return;
         }
 
         if (!ValidationUtils.isNumeric(string)) {
-            SocketHelper.send(getKobold(), "Argument is not valid");
+            SocketHelper.Output.send(getKobold(), "Argument is not valid");
             return;
         }
 
         int maxTokens = Integer.parseInt(string);
 
         if (maxTokens < 0) {
-            SocketHelper.send(getKobold(), "Max tokens must not be 0 and must be positive");
+            SocketHelper.Output.send(getKobold(), "Max tokens must not be 0 and must be positive");
             return;
         }
 
         getKobold().getLair().getGame().getPreferences().setMaxTokens(maxTokens);
 
-        SocketHelper.sendTo(getKobold().getLair(), "Max tokens set to " + getKobold().getLair().getGame().getPreferences().getMaxTokens());
+        SocketHelper.Output.sendTo(getKobold().getLair(), "Max tokens set to " + getKobold().getLair().getGame().getPreferences().getMaxTokens());
     }
 
     public void setBalance(String string) {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel to change game settings");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel to change game settings");
             return;
         }
 
         if (getKobold().getLair().getGame() != null) {
-            SocketHelper.send(getKobold(), "Game has already started");
+            SocketHelper.Output.send(getKobold(), "Game has already started");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "Only operators can change settings");
+            SocketHelper.Output.send(getKobold(), "Only operators can change settings");
             return;
         }
 
         if (string.isEmpty()) {
-            SocketHelper.send(getKobold(), "You need to set a valid amount");
+            SocketHelper.Output.send(getKobold(), "You need to set a valid amount");
             return;
         }
 
         if (!ValidationUtils.isNumeric(string)) {
-            SocketHelper.send(getKobold(), "Argument is not valid");
+            SocketHelper.Output.send(getKobold(), "Argument is not valid");
             return;
         }
 
         int balance = Integer.parseInt(string);
 
         if (balance < 0) {
-            SocketHelper.send(getKobold(), "Balance must not be 0 and must be positive");
+            SocketHelper.Output.send(getKobold(), "Balance must not be 0 and must be positive");
             return;
         }
 
         getKobold().getLair().getGame().getPreferences().setInitBalance(balance);
 
-        SocketHelper.sendTo(getKobold().getLair(), "Initial Balance set to " + getKobold().getLair().getGame().getPreferences().getInitBalance());
+        SocketHelper.Output.sendTo(getKobold().getLair(), "Initial Balance set to " + getKobold().getLair().getGame().getPreferences().getInitBalance());
     }
 
     public void setMaxPlayers(String string) {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel to change game settings");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel to change game settings");
             return;
         }
 
         if (getKobold().getLair().getGame() != null) {
-            SocketHelper.send(getKobold(), "Game has already started");
+            SocketHelper.Output.send(getKobold(), "Game has already started");
             return;
         }
 
         if (!LairUtils.isOperator(getKobold().getLair().getOperators(), getKobold())) {
-            SocketHelper.send(getKobold(), "Only operators can change settings");
+            SocketHelper.Output.send(getKobold(), "Only operators can change settings");
             return;
         }
 
         if (string.isEmpty()) {
-            SocketHelper.send(getKobold(), "You need to set a valid amount of clients");
+            SocketHelper.Output.send(getKobold(), "You need to set a valid amount of clients");
             return;
         }
 
         if (!ValidationUtils.isNumeric(string)) {
-            SocketHelper.send(getKobold(), "Argument is not valid");
+            SocketHelper.Output.send(getKobold(), "Argument is not valid");
             return;
         }
 
         int maxPlayers = Integer.parseInt(string);
 
         if (maxPlayers < 0) {
-            SocketHelper.send(getKobold(), "Max players must not be 0 and must be positive");
+            SocketHelper.Output.send(getKobold(), "Max players must not be 0 and must be positive");
             return;
         }
 
         getKobold().getLair().getGame().getPreferences().setMaxPlayers(maxPlayers);
 
-        SocketHelper.sendTo(getKobold().getLair(), "Max players set to " + getKobold().getLair().getGame().getPreferences().getMaxPlayers());
+        SocketHelper.Output.sendTo(getKobold().getLair(), "Max players set to " + getKobold().getLair().getGame().getPreferences().getMaxPlayers());
     }
 
     public void play(String string) {
         if (getKobold().getLair() == null) {
-            SocketHelper.send(getKobold(), "You need to be in a channel in order to play");
+            SocketHelper.Output.send(getKobold(), "You need to be in a channel in order to play");
             return;
         }
 
         if (getKobold().getLair().getGame() == null) {
-            SocketHelper.send(getKobold(), "Game hasn't started");
+            SocketHelper.Output.send(getKobold(), "Game hasn't started");
             return;
         }
 
         if (getKobold().getLair().getGame().getPlayerlist().getCurrent().getPlayer() != getKobold().getPlayer()) {
-            SocketHelper.send(getKobold(), "It's not your turn");
+            SocketHelper.Output.send(getKobold(), "It's not your turn");
             return;
         }
 
