@@ -86,17 +86,6 @@ public class PatolliCommands extends Commands {
         SocketHelper.send(getClient(), "Color set to " + Integer.toHexString(getClient().getPlayer().getColor().getRGB()));
     }
 
-    /**
-     * Function to validate hexadecimal color code
-     *
-     * @param str
-     * @return
-     */
-    private boolean isValidHexaCode(String str) {
-        // Regex to check valid hexadecimal color code.
-        return str.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
-    }
-
     public void startGame() {
         if (getClient().getLayer() == null) {
             SocketHelper.send(getClient(), "You need to be in a channel to start a game");
@@ -353,6 +342,17 @@ public class PatolliCommands extends Commands {
         }
 
         getClient().getLayer().getGame().play(token);
+    }
+
+    /**
+     * Function to validate hexadecimal color code
+     *
+     * @param str
+     * @return
+     */
+    private boolean isValidHexaCode(String str) {
+        // Regex to check valid hexadecimal color code.
+        return str.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
     }
 
     @Override
