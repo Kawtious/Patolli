@@ -4,7 +4,7 @@
  */
 package patolli.application;
 
-import patolli.game.online.server.Server;
+import patolli.game.online.server.PatolliServer;
 
 public class RunServer {
 
@@ -15,8 +15,12 @@ public class RunServer {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        Server server = Server.getInstance();
+        PatolliServer server = new PatolliServer();
+
         server.setPort(PORT);
+        server.setName("server");
+        server.setPassword("");
+
         if (!server.start()) {
             System.exit(1);
         }

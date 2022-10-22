@@ -20,7 +20,10 @@ public class Board {
     }
 
     public boolean createBoard(final int squares) {
-        if ((squares + 2 + 2) * 2 > 14) {
+        int bladeSize = (squares + 2 + 2) * 2;
+        int maxBladeSize = 14;
+
+        if (bladeSize > maxBladeSize) {
             return false;
         }
 
@@ -29,9 +32,6 @@ public class Board {
             addCenters();
         }
 
-        //for (Space space : spaces) {
-        //    Console.WriteLine("Board", space.toString());
-        //}
         return true;
     }
 
@@ -69,42 +69,38 @@ public class Board {
         spaces.add(new CentralSpace());
     }
 
-    public int getSize() {
-        return spaces.size();
-    }
-
-    public void insert(final Token token, final int pos) {
+    public void insertToken(Token token, int pos) {
         token.setPosition(pos);
         getSpace(pos).insertToken(token);
     }
 
-    public void remove(final Token token) {
+    public void removeToken(Token token) {
         getSpace(token.getPosition()).removeToken(token);
     }
 
-    public void removeTokensOf(final Player player) {
+    public void removeTokensOf(Player player) {
         for (Token token : player.getTokens()) {
             if (token.getPosition() >= 0) {
-                remove(token);
+                removeToken(token);
             }
         }
     }
 
-    public void move(final Token token, final int nextPos) {
+    public void moveToken(Token token, int nextPos) {
         int newPos = nextPos;
 
-        if (nextPos >= getSize()) {
-            newPos = nextPos - getSize();
+        if (nextPos >= getBoardSize()) {
+            newPos = nextPos - getBoardSize();
         }
 
-        remove(token);
+        removeToken(token);
 
         if (!willTokenFinish(token, nextPos)) {
-            insert(token, newPos);
+            insertToken(token, newPos);
         }
     }
 
-    public boolean willCollide(final Player player, final int pos) {
+    public boolean willTokenCollideWithAnother(Player player, int pos) {
         return getSpace(pos).getOwner() != null || getSpace(pos).getOwner() != player;
     }
 
@@ -112,15 +108,15 @@ public class Board {
         final int initialPos = token.getInitialPos();
         final int prevPos = token.getPosition();
 
-        if (nextPos >= getSize()) {
-            return nextPos - getSize() >= initialPos;
+        if (nextPos >= getBoardSize()) {
+            return nextPos - getBoardSize() >= initialPos;
         }
 
         return prevPos < initialPos && nextPos >= initialPos;
     }
 
-    public int getStartPos(final int turn) {
-        final int boardSize = getSize();
+    public int calculateTokenStartPos(int turn) {
+        final int boardSize = getBoardSize();
         final int sectionSquares = boardSize / 4;
         final int blades = 4;
         final int result = (boardSize - sectionSquares * (1 + (blades - (turn + 1))));
@@ -131,11 +127,15 @@ public class Board {
     public Space getSpace(final int index) {
         int position = index;
 
-        if (index >= getSize()) {
-            position -= getSize();
+        if (index >= getBoardSize()) {
+            position -= getBoardSize();
         }
 
         return spaces.get(position);
+    }
+
+    public int getBoardSize() {
+        return spaces.size();
     }
 
 }

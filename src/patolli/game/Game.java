@@ -4,20 +4,20 @@
  */
 package patolli.game;
 
+import dradacorus.online.utils.SocketHelper;
 import java.util.ArrayList;
 import java.util.List;
 import patolli.game.Settings.Preferences;
-import patolli.game.online.PlayerSocket;
-import patolli.game.online.server.Channel;
+import patolli.game.online.client.PlayerSocket;
+import patolli.game.online.server.GameLayer;
 import patolli.game.spaces.CentralSpace;
 import patolli.game.spaces.ExteriorSpace;
 import patolli.game.spaces.Space;
 import patolli.game.spaces.TriangleSpace;
-import patolli.utils.SocketHelper;
 
 public class Game {
 
-    private final Channel channel;
+    private final GameLayer channel;
 
     private final Settings settings = new Settings(new Preferences());
 
@@ -27,18 +27,13 @@ public class Game {
 
     private Playerlist playerlist;
 
-    public Game(final Channel channel) {
+    public Game(final GameLayer channel) {
         this.channel = channel;
     }
 
     public boolean init() {
         if (settings.getPlayers().size() < 2) {
             SocketHelper.sendTo(channel, "Not enough players have joined the game");
-            return false;
-        }
-
-        if (!getPreferences().validate()) {
-            SocketHelper.sendTo(channel, "Failed to validate settings");
             return false;
         }
 
@@ -128,11 +123,11 @@ public class Game {
             token.markAsFinished();
             everyonePays(settings.getPreferences().getBet(), playerlist.getPlayers(), playerlist.getCurrent());
             getCurrentPlayer().selectNextToken();
-            board.remove(token);
+            board.removeToken(token);
             return;
         }
 
-        if (board.willCollide(token.getOwner(), nextPos)) {
+        if (board.willTokenCollideWithAnother(token.getOwner(), nextPos)) {
             SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space occupied by " + nextSpace.getOwner().getName());
 
             if (nextSpace instanceof CentralSpace) {
@@ -141,14 +136,14 @@ public class Game {
                     token1.markAsDestroyed();
                 }
 
-                board.move(token, nextPos);
+                board.moveToken(token, nextPos);
             } else {
                 SocketHelper.sendTo(channel, "Player " + getCurrentPlayer().getName() + " returns to previous position");
             }
 
             getCurrentPlayer().selectNextToken();
         } else {
-            board.move(token, nextPos);
+            board.moveToken(token, nextPos);
             SocketHelper.sendTo(channel, "Token " + token.getIndex() + " of player " + getCurrentPlayer().getName() + " moves to space at position " + token.getPosition());
 
             if (nextSpace instanceof ExteriorSpace) {
@@ -165,8 +160,8 @@ public class Game {
     }
 
     private void insertToken() {
-        Token token = getCurrentPlayer().createToken(board.getStartPos(playerlist.getTurn()));
-        board.insert(token, token.getInitialPos());
+        Token token = getCurrentPlayer().createToken(board.calculateTokenStartPos(playerlist.getTurn()));
+        board.insertToken(token, token.getInitialPos());
 
         SocketHelper.sendTo(channel, "Inserted token " + token.getIndex() + " in board for player " + getCurrentPlayer().getName() + " at position " + token.getInitialPos());
         getCurrentPlayer().selectNextToken();
@@ -251,7 +246,7 @@ public class Game {
         return settings.getPreferences();
     }
 
-    public Channel getChannel() {
+    public GameLayer getChannel() {
         return channel;
     }
 

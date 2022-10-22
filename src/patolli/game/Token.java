@@ -16,7 +16,7 @@ public class Token {
 
     public Token(final Player owner, final int index, final int position) {
         this.owner = owner;
-        this.index = index < 0 ? 0 : index;
+        this.index = (index < 0) ? 0 : index;
         this.initialPos = position;
         this.position = position;
     }

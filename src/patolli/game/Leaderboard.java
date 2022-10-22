@@ -6,7 +6,7 @@ package patolli.game;
 
 import java.util.ArrayList;
 import java.util.List;
-import patolli.game.online.PlayerSocket;
+import patolli.game.online.client.PlayerSocket;
 
 public class Leaderboard {
 

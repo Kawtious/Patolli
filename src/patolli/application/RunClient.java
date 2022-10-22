@@ -4,7 +4,7 @@
  */
 package patolli.application;
 
-import patolli.game.online.Client;
+import dradacorus.online.client.DragonClient;
 
 public class RunClient {
 
@@ -17,7 +17,7 @@ public class RunClient {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        Client client = Client.getInstance();
+        DragonClient client = new DragonClient();
 
         client.setIp(SERVER_IP);
         client.setPort(SERVER_PORT);

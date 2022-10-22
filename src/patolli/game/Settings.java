@@ -7,8 +7,7 @@ package patolli.game;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import patolli.game.online.PlayerSocket;
-import patolli.utils.Console;
+import patolli.game.online.client.PlayerSocket;
 
 public class Settings {
 
@@ -82,38 +81,30 @@ public class Settings {
             this.initBalance = initBalance;
         }
 
-        public boolean validate() {
+        public void validate() throws InvalidSettingsException {
             if (maxPlayers < 2) {
-                Console.WriteLine("Settings", "Not enough players");
-                return false;
+                throw new InvalidSettingsException("Not enough players");
             }
 
             if (maxPlayers > 4) {
-                Console.WriteLine("Settings", "Too many players");
-                return false;
+                throw new InvalidSettingsException("Not enough players");
             }
 
             if (bet < 5) {
-                Console.WriteLine("Settings", "Bet has to be greater than 5 in order to play");
-                return false;
+                throw new InvalidSettingsException("Bet has to be greater than 5 in order to play");
             }
 
             if (bet > initBalance / 3) {
-                Console.WriteLine("Settings", "Bet too big");
-                return false;
+                throw new InvalidSettingsException("Bet too big");
             }
 
             if (maxTokens < 2) {
-                Console.WriteLine("Settings", "Each player must have a minimum of 2 tokens to play");
-                return false;
+                throw new InvalidSettingsException("Each player must have a minimum of 2 tokens to play");
             }
 
             if (squares < 2) {
-                Console.WriteLine("Settings", "Board must have a minimum of 2 common spaces per side of each blade");
-                return false;
+                throw new InvalidSettingsException("Board must have a minimum of 2 common spaces per side of each blade");
             }
-
-            return true;
         }
 
         public int getMaxPlayers() {

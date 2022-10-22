@@ -255,7 +255,7 @@ public class Player {
         }
 
         private void determineOutcome() {
-            outcome = result == 5 ? 10 : result;
+            outcome = (result == 5) ? 10 : result;
         }
 
         public int getResult() {
