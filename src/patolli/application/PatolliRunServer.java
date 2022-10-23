@@ -15,10 +15,8 @@ public class PatolliRunServer {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        PatolliServer server = new PatolliServer();
+        PatolliServer server = new PatolliServer(PORT);
 
-        server.setPort(PORT);
-        server.setName("server");
         server.setPassword("");
 
         if (!server.start()) {

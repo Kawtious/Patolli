@@ -17,6 +17,7 @@ import patolli.game.spaces.TriangleSpace;
 
 public class Game {
 
+    // where the game is taking place at
     private final GameLair gameLayer;
 
     private final Settings settings = new Settings(new Preferences());

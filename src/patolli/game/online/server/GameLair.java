@@ -4,9 +4,9 @@
  */
 package patolli.game.online.server;
 
-import dradacorus.online.dragon.IDragonServer;
-import dradacorus.online.kobold.IKoboldSocket;
-import dradacorus.online.server.lairs.Lair;
+import dradacorus.online.ExtendableLair;
+import dradacorus.online.IDragonServer;
+import dradacorus.online.IKoboldSocket;
 import dradacorus.online.utils.SocketHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ import patolli.game.Game;
 import patolli.game.InvalidSettingsException;
 import patolli.game.online.client.PlayerSocket;
 
-public class GameLair extends Lair {
+public class GameLair extends ExtendableLair {
 
     private Game game;
 

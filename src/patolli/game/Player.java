@@ -34,6 +34,13 @@ public class Player {
         this.dice = new Dice();
     }
 
+    public Player(final String name) {
+        this.name = name;
+        this.color = Color.GRAY;
+        this.balance = new Balance();
+        this.dice = new Dice();
+    }
+
     public Player(final String name, final Color color) {
         this.name = name;
         this.color = color;

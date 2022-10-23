@@ -4,24 +4,21 @@
  */
 package patolli.game.online.client;
 
-import dradacorus.online.dragon.IDragonServer;
-import dradacorus.online.kobold.KoboldSocket;
+import dradacorus.online.ExtendableKoboldSocket;
+import dradacorus.online.IDragonServer;
+import dradacorus.online.ILairActions;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.List;
 import patolli.game.Player;
 import patolli.game.online.server.GameLair;
 
-public class PlayerSocket extends KoboldSocket {
+public class PlayerSocket extends ExtendableKoboldSocket {
 
     private Player player;
 
-    private final PatolliCommands commands;
-
-    public PlayerSocket(IDragonServer dragon, Socket socket) throws IOException {
-        super(dragon, socket);
-        this.player = new Player();
-        this.commands = new PatolliCommands(dragon, this);
+    public PlayerSocket(IDragonServer dragon, ILairActions actions, Socket socket) throws IOException {
+        super(dragon, actions, socket);
+        this.player = new Player(getName());
     }
 
     public Player getPlayer() {
@@ -33,56 +30,6 @@ public class PlayerSocket extends KoboldSocket {
     }
 
     @Override
-    public void executeCommand(List<String> arguments) {
-        String execute = getArgument(arguments, 0);
-        boolean modCommandExecuted = true;
-
-        switch (execute) {
-            // Player
-            case "/setcolor" -> {
-                commands.setColor(getArgument(arguments, 1));
-            }
-
-            // Settings
-            case "/setsquares" -> {
-                commands.setSquares(getArgument(arguments, 1));
-            }
-            case "/setbet" -> {
-                commands.setBet(getArgument(arguments, 1));
-            }
-            case "/setmaxtokens" -> {
-                commands.setMaxTokens(getArgument(arguments, 1));
-            }
-            case "/setbalance" -> {
-                commands.setBalance(getArgument(arguments, 1));
-            }
-            case "/setmaxplayers" -> {
-                commands.setMaxPlayers(getArgument(arguments, 1));
-            }
-
-            // Game
-            case "/startgame" -> {
-                commands.startGame();
-            }
-            case "/stopgame" -> {
-                commands.stopGame();
-            }
-            case "/play" -> {
-                commands.play(getArgument(arguments, 1));
-            }
-
-            //none of the mod commands were executed
-            default -> {
-                modCommandExecuted = false;
-            }
-        }
-
-        if (!modCommandExecuted) {
-            super.executeCommand(arguments);
-        }
-    }
-
-    @Override
     public String getKoboldName() {
         return player.getName();
     }
@@ -90,6 +37,11 @@ public class PlayerSocket extends KoboldSocket {
     @Override
     public GameLair getLair() {
         return (GameLair) super.getLair();
+    }
+
+    @Override
+    public PatolliActions getActions() {
+        return (PatolliActions) actions;
     }
 
 }
